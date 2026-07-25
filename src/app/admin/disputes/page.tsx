@@ -10,8 +10,11 @@ export default async function AdminDisputesPage() {
   const user = await prisma.user.findUnique({ where: { id: session.user.id } })
   if (!user || !user.roles.includes("ADMIN")) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-bg-canvas">
-        <p className="text-text-secondary">Access denied — admin only</p>
+      <div className="flex min-h-screen items-center justify-center bg-bg-base">
+        <div className="card-double"><div className="card-inner text-center py-8 px-12">
+          <p className="text-text-secondary">Access denied — admin only</p>
+          <Link href="/" className="btn-ghost text-sm mt-4 inline-block">Back to Dashboard</Link>
+        </div></div>
       </div>
     )
   }
@@ -28,62 +31,62 @@ export default async function AdminDisputesPage() {
   })
 
   return (
-    <div className="min-h-screen bg-bg-canvas">
-      <header className="border-b border-border-surface">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="text-sm text-text-secondary hover:text-text-primary">&larr; Dashboard</Link>
-            <h1 className="font-heading text-2xl font-bold text-text-primary">Admin — Disputes</h1>
-          </div>
+    <div className="max-w-7xl mx-auto px-6 py-6">
+      <header className="glass-strong rounded-2xl px-6 py-3 mb-8 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link href="/" className="text-text-secondary hover:text-text-primary transition">&larr; Dashboard</Link>
+          <span className="text-text-muted">/</span>
+          <h1 className="text-lg font-bold" style={{ fontFamily: "var(--font-poppins)" }}>Admin — Disputes</h1>
         </div>
+        <span className="badge bg-accent-subtle text-accent-primary">{disputes.length} total</span>
       </header>
 
-      <main className="mx-auto max-w-7xl px-6 py-8">
-        <div className="rounded-card border border-border-surface bg-bg-surface overflow-hidden">
+      <div className="card-double animate-fade-up stagger-1 overflow-hidden">
+        <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border-surface">
-                <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase">Project</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase">Milestone</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase">Opened By</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase">Evidence</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase">Date</th>
-                <th className="px-4 py-3" />
+              <tr className="border-b border-border-subtle">
+                <th className="px-5 py-3.5 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Project</th>
+                <th className="px-5 py-3.5 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Milestone</th>
+                <th className="px-5 py-3.5 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Opened By</th>
+                <th className="px-5 py-3.5 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Status</th>
+                <th className="px-5 py-3.5 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Evidence</th>
+                <th className="px-5 py-3.5 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Date</th>
+                <th className="px-5 py-3.5" />
               </tr>
             </thead>
             <tbody>
-              {disputes.map((d) => (
-                <tr key={d.id} className="border-b border-border-surface last:border-b-0">
-                  <td className="px-4 py-3 text-text-primary">{d.milestone.project.title}</td>
-                  <td className="px-4 py-3 text-text-secondary">{d.milestone.title}</td>
-                  <td className="px-4 py-3 text-text-primary">{d.opener.name}</td>
-                  <td className="px-4 py-3">
-                    <span className={`rounded-pill px-2 py-0.5 text-[10px] font-medium ${
+              {disputes.map((d, i) => (
+                <tr key={d.id} className={`border-b border-border-subtle last:border-b-0 transition-colors hover:bg-bg-hover/50 animate-fade-up stagger-${Math.min(i + 1, 6)}`}>
+                  <td className="px-5 py-4 text-text-primary font-medium">{d.milestone.project.title}</td>
+                  <td className="px-5 py-4 text-text-secondary">{d.milestone.title}</td>
+                  <td className="px-5 py-4 text-text-primary">{d.opener.name}</td>
+                  <td className="px-5 py-4">
+                    <span className={`badge ${
                       d.status === "RESOLVED_ACCEPTED" || d.status === "RESOLVED_ADMIN"
-                        ? "bg-state-success/10 text-state-success"
+                        ? "bg-success/10 text-success"
                         : d.status === "ESCALATED"
-                          ? "bg-state-danger/10 text-state-danger"
-                          : "bg-state-warning/10 text-state-warning"
+                          ? "bg-danger/10 text-danger"
+                          : "bg-warning/10 text-warning"
                     }`}>
                       {d.status.replace(/_/g, " ")}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-text-muted">{d._count.evidences}</td>
-                  <td className="px-4 py-3 text-text-muted">{new Date(d.createdAt).toLocaleDateString()}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-5 py-4 text-text-muted tabular-nums">{d._count.evidences}</td>
+                  <td className="px-5 py-4 text-text-muted">{new Date(d.createdAt).toLocaleDateString()}</td>
+                  <td className="px-5 py-4">
                     <Link
                       href={`/disputes/${d.id}`}
-                      className="text-accent-primary text-xs hover:underline"
+                      className="text-accent-primary text-xs hover:underline font-medium"
                     >
-                      View
+                      View →
                     </Link>
                   </td>
                 </tr>
               ))}
               {disputes.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-text-muted">
+                  <td colSpan={7} className="px-5 py-12 text-center text-text-muted">
                     No disputes yet
                   </td>
                 </tr>
@@ -91,7 +94,7 @@ export default async function AdminDisputesPage() {
             </tbody>
           </table>
         </div>
-      </main>
+      </div>
     </div>
   )
 }
