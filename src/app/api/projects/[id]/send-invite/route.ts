@@ -17,9 +17,17 @@ export async function POST(
 
   if (!email) return NextResponse.json({ error: "Missing email" }, { status: 400 })
 
-  const project = await prisma.project.findUnique({ where: { id } })
+  const project = await prisma.project.findUnique({ 
+    where: { id },
+    include: { milestones: true },
+  })
   if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 })
   if (project.clientId !== user!.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+
+  const sumMilestones = project.milestones.reduce((sum, m) => sum + m.amount, 0)
+  if (sumMilestones !== project.totalAmount) {
+    return NextResponse.json({ error: "Milestone amounts must equal the project total amount before sending an invite" }, { status: 400 })
+  }
 
   const inviteToken = nanoid(32)
 

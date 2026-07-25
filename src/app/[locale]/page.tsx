@@ -77,11 +77,6 @@ export default async function Dashboard() {
     nextAction: currentProject.status === "DRAFT" ? "Review & send to freelancer" : currentProject.status === "AWAITING_FUNDING" ? "Fund escrow to start" : "Track milestone progress",
   } : null
 
-  // ── Milestone Progress ──
-  const submittedMilestones = allMilestones.filter(m => m.status === "SUBMITTED" || m.status === "IN_REVIEW").length
-  const pendingMilestones = allMilestones.filter(m => m.status === "PENDING").length
-  const disputedMilestones = allMilestones.filter(m => m.status === "DISPUTED").length
-
   // ── Widgets Data ──
   const notifications = await prisma.notification.findMany({
     where: { userId: user.id },
@@ -150,7 +145,7 @@ export default async function Dashboard() {
           </div>
           <div className="flex items-center gap-3 px-2 py-2">
             <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden shrink-0">
-               {user.avatarUrl ? <img src={user.avatarUrl} alt="avatar" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-[#4F46E5]"></div>}
+               {user.avatarUrl ? <Image src={user.avatarUrl} alt="avatar" width={36} height={36} unoptimized className="w-full h-full object-cover" /> : <div className="w-full h-full bg-[#4F46E5]"></div>}
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-[#0F172A] truncate">{user.name}</p>
@@ -179,7 +174,7 @@ export default async function Dashboard() {
             <div className="h-6 w-px bg-gray-200"></div>
             <div className="flex items-center gap-2 cursor-pointer">
               <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden shrink-0">
-                 {user.avatarUrl ? <img src={user.avatarUrl} alt="avatar" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-[#4F46E5]"></div>}
+                 {user.avatarUrl ? <Image src={user.avatarUrl} alt="avatar" width={32} height={32} unoptimized className="w-full h-full object-cover" /> : <div className="w-full h-full bg-[#4F46E5]"></div>}
               </div>
               <span className="text-sm font-semibold text-[#0F172A] hidden md:block">{user.name?.split(' ')[0]}</span>
             </div>
@@ -197,7 +192,7 @@ export default async function Dashboard() {
               <div className="flex items-start justify-between">
                 <div>
                   <h1 className="text-[28px] font-bold text-[#0F172A] tracking-tight mb-1">Welcome back, {user.name?.split(' ')[0]}! 👋</h1>
-                  <p className="text-sm text-[#64748B]">Here's what's happening with your projects today.</p>
+                  <p className="text-sm text-[#64748B]">Here&apos;s what&apos;s happening with your projects today.</p>
                 </div>
                 <Link href="/projects/new" className="bg-[#4F46E5] hover:bg-[#4338CA] text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-colors flex items-center gap-2">
                   + New Project
@@ -361,8 +356,8 @@ export default async function Dashboard() {
                           </div>
                           {project.milestones.map((m, i) => (
                             <div key={m.id} className="flex flex-col items-center gap-1.5">
-                              <div className={`w-5 h-5 rounded-full border-2 ${m.status === 'COMPLETED' ? 'bg-[#10B981] border-[#10B981] text-white' : m.status === 'IN_PROGRESS' || m.status === 'PENDING' ? 'bg-white border-[#4F46E5]' : 'bg-white border-gray-200'} flex items-center justify-center`}>
-                                {m.status === 'COMPLETED' ? <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg> : <div className={`w-1.5 h-1.5 rounded-full ${m.status === 'IN_PROGRESS' || m.status === 'PENDING' ? 'bg-[#4F46E5]' : 'bg-gray-200'}`}></div>}
+                              <div className={`w-5 h-5 rounded-full border-2 ${m.status === 'PAID' ? 'bg-[#10B981] border-[#10B981] text-white' : m.status !== 'PENDING' ? 'bg-white border-[#4F46E5]' : 'bg-white border-gray-200'} flex items-center justify-center`}>
+                                {m.status === 'PAID' ? <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg> : <div className={`w-1.5 h-1.5 rounded-full ${m.status !== 'PENDING' ? 'bg-[#4F46E5]' : 'bg-gray-200'}`}></div>}
                               </div>
                               <span className="text-[10px] font-semibold text-[#0F172A]">Milestone {i + 1}</span>
                             </div>
@@ -375,7 +370,7 @@ export default async function Dashboard() {
                         <div>
                           <p className="text-[10px] text-[#64748B] mb-1">Freelancer</p>
                           <div className="flex items-center gap-1.5">
-                            <div className="w-5 h-5 rounded-full bg-gray-200 overflow-hidden"><img src={project.freelancer?.avatarUrl || ''} className="w-full h-full object-cover" /></div>
+                            <div className="w-5 h-5 rounded-full bg-gray-200 overflow-hidden"><Image src={project.freelancer?.avatarUrl || ''} alt="Freelancer avatar" width={20} height={20} unoptimized className="w-full h-full object-cover" /></div>
                             <span className="text-xs font-semibold text-[#0F172A]">{project.freelancer?.name}</span>
                           </div>
                         </div>

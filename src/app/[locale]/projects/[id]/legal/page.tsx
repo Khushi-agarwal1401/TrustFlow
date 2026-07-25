@@ -76,7 +76,7 @@ export default function LegalPage({ params }: { params: Promise<{ id: string }> 
 
           <div className="card p-4">
             <h3 className="font-semibold mb-3">Clause Templates</h3>
-            <ClauseTemplates contractId={contract.id} />
+            <ClauseTemplates />
             <div className="mt-3 pt-3 border-t border-border-subtle">
               <a href={`/api/contracts/${contract.id}/pdf`} target="_blank" className="btn-ghost w-full text-sm text-center block">
                 Export PDF

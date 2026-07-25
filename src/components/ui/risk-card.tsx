@@ -32,7 +32,7 @@ const trendConfig = {
   worsening: { icon: ArrowUpRight, color: "text-[var(--color-danger)]", label: "Worsening" },
 }
 
-function RiskCard({ className, currentLevel, currentReason, history, trend, compact, onViewHistory, ...props }: RiskCardProps) {
+function RiskCard({ className, currentLevel, currentReason, trend, compact, onViewHistory, ...props }: RiskCardProps) {
   const config = levelConfig[currentLevel]
   const Icon = config.icon
   const trendData = trend ? trendConfig[trend] : null

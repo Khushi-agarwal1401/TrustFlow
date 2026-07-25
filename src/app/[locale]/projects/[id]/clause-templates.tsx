@@ -11,11 +11,7 @@ interface ClauseTemplate {
   content: string
 }
 
-interface ClauseTemplatesProps {
-  contractId: string
-}
-
-export function ClauseTemplates({ contractId }: ClauseTemplatesProps) {
+export function ClauseTemplates() {
   const [templates, setTemplates] = useState<ClauseTemplate[]>([])
   const [loading, setLoading] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -23,7 +19,7 @@ export function ClauseTemplates({ contractId }: ClauseTemplatesProps) {
 
   useEffect(() => {
     if (!expanded) return
-    setLoading(true)
+    if (templates.length > 0) return
     fetch("/api/clause-templates")
       .then((r) => r.json())
       .then((data) => {
@@ -31,14 +27,17 @@ export function ClauseTemplates({ contractId }: ClauseTemplatesProps) {
         setLoading(false)
       })
       .catch(() => setLoading(false))
-  }, [expanded])
+  }, [expanded, templates.length])
 
   const categories = [...new Set(templates.map((t) => t.category))]
 
   return (
     <div>
       <button
-        onClick={() => setExpanded(!expanded)}
+        onClick={() => {
+          if (!expanded && templates.length === 0) setLoading(true)
+          setExpanded(!expanded)
+        }}
         className="btn-ghost w-full text-sm"
       >
         {expanded ? "Hide Clause Templates" : "Browse Clause Templates"}

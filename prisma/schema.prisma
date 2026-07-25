@@ -78,327 +78,354 @@ enum OrganizationRole {
 }
 
 model User {
-  id                        String   @id @default(uuid())
-  email                     String   @unique
-  phone                     String?
-  passwordHash              String?
-  name                      String
-  avatarUrl                 String?
-  image                     String?
-  roles                     UserRole[]
-  stripeConnectAccountId    String?
-  stripeCustomerId          String?
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @updatedAt
+  id                     String     @id @default(uuid())
+  email                  String     @unique
+  phone                  String?
+  passwordHash           String?    @map("password_hash")
+  name                   String
+  avatarUrl              String?    @map("avatar_url")
+  image                  String?
+  roles                  UserRole[]
+  stripeConnectAccountId String?    @map("stripe_connect_account_id")
+  stripeCustomerId       String?    @map("stripe_customer_id")
+  createdAt              DateTime   @default(now()) @map("created_at")
+  updatedAt              DateTime   @updatedAt @map("updated_at")
 
-  projectsAsClient          Project[]       @relation("ClientProjects")
-  projectsAsFreelancer      Project[]       @relation("FreelancerProjects")
-  disputesOpened            Dispute[]       @relation("DisputeOpener")
-  disputesResolved          Dispute[]       @relation("DisputeResolver")
-  disputeEvidences          DisputeEvidence[]
-  ratingsGiven              Rating[]        @relation("RatingGiver")
-  ratingsReceived           Rating[]        @relation("RatingReceiver")
-  notifications             Notification[]
-  projectEvents             ProjectEvent[]
-  accounts                  Account[]
-  sessions                  Session[]
-  ownedOrganizations        Organization[]  @relation("OrganizationOwner")
-  organizationMemberships   TeamOrganizationMember[]
-  apiKeys                   ApiKey[]
-  contractSignatures        ContractSignature[]
-  freelancerProfile         FreelancerProfile?
-  proposals                 Proposal[]
-  invoicesSent              Invoice[]       @relation("InvoiceSender")
-  invoicesReceived          Invoice[]       @relation("InvoiceRecipient")
-  taxInfos                  TaxInfo[]
-  auditLogs                 AuditLog[]
-  pushSubscriptions         PushSubscription[]
-  messagesSent              Message[]
+  projectsAsClient        Project[]                @relation("ClientProjects")
+  projectsAsFreelancer    Project[]                @relation("FreelancerProjects")
+  disputesOpened          Dispute[]                @relation("DisputeOpener")
+  disputesResolved        Dispute[]                @relation("DisputeResolver")
+  disputeEvidences        DisputeEvidence[]
+  ratingsGiven            Rating[]                 @relation("RatingGiver")
+  ratingsReceived         Rating[]                 @relation("RatingReceiver")
+  notifications           Notification[]
+  projectEvents           ProjectEvent[]
+  accounts                Account[]
+  sessions                Session[]
+  ownedOrganizations      Organization[]           @relation("OrganizationOwner")
+  organizationMemberships TeamOrganizationMember[]
+  apiKeys                 ApiKey[]
+  contractSignatures      ContractSignature[]
+  freelancerProfile       FreelancerProfile?
+  proposals               Proposal[]
+  invoicesSent            Invoice[]                @relation("InvoiceSender")
+  invoicesReceived        Invoice[]                @relation("InvoiceRecipient")
+  taxInfos                TaxInfo[]
+  auditLogs               AuditLog[]
+  pushSubscriptions       PushSubscription[]
+  messagesSent            Message[]
+
+  @@map("users")
 }
 
 model Organization {
   id               String   @id @default(uuid())
   name             String
   slug             String   @unique
-  ownerId          String
-  stripeCustomerId String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  ownerId          String   @map("owner_id")
+  stripeCustomerId String?  @map("stripe_customer_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
-  owner            User     @relation("OrganizationOwner", fields: [ownerId], references: [id])
-  members          TeamOrganizationMember[]
-  invites          OrganizationInvite[]
-  projects         Project[]
+  owner    User                     @relation("OrganizationOwner", fields: [ownerId], references: [id])
+  members  TeamOrganizationMember[]
+  invites  OrganizationInvite[]
+  projects Project[]
+
+  @@map("organizations")
 }
 
 model TeamOrganizationMember {
   id             String           @id @default(uuid())
-  organizationId String
-  userId         String
+  organizationId String           @map("organization_id")
+  userId         String           @map("user_id")
   role           OrganizationRole @default(MEMBER)
-  createdAt      DateTime         @default(now())
+  createdAt      DateTime         @default(now()) @map("created_at")
 
-  organization   Organization     @relation(fields: [organizationId], references: [id])
-  user           User             @relation(fields: [userId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
 
   @@unique([organizationId, userId])
+  @@map("team_organization_members")
 }
 
 model OrganizationInvite {
   id             String           @id @default(uuid())
-  organizationId String
+  organizationId String           @map("organization_id")
   email          String
   token          String           @unique
   role           OrganizationRole @default(MEMBER)
-  expiresAt      DateTime
-  createdAt      DateTime         @default(now())
+  expiresAt      DateTime         @map("expires_at")
+  createdAt      DateTime         @default(now()) @map("created_at")
 
-  organization   Organization     @relation(fields: [organizationId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
 
   @@index([token])
+  @@map("organization_invites")
 }
 
 model ApiKey {
-  id        String   @id @default(uuid())
-  name      String
-  keyHash   String   @unique
-  userId    String
-  scopes    String[]
-  lastUsedAt DateTime?
-  expiresAt DateTime?
-  createdAt DateTime @default(now())
+  id         String    @id @default(uuid())
+  name       String
+  keyHash    String    @unique @map("key_hash")
+  userId     String    @map("user_id")
+  scopes     String[]
+  lastUsedAt DateTime? @map("last_used_at")
+  expiresAt  DateTime? @map("expires_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
 
-  user      User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   @@index([keyHash])
+  @@map("api_keies")
 }
 
 model ClauseTemplate {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
+  id           String   @id @default(uuid())
+  name         String
+  description  String?
   jurisdiction String
-  category    String
-  content     String
-  version     Int      @default(1)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  category     String
+  content      String
+  version      Int      @default(1)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@index([jurisdiction, category])
+  @@map("clause_templates")
 }
 
 model ContractSignature {
   id            String   @id @default(uuid())
-  contractId    String
-  userId        String
-  signedAt      DateTime @default(now())
-  ipAddress     String?
-  signatureData Json?
+  contractId    String   @map("contract_id")
+  userId        String   @map("user_id")
+  signedAt      DateTime @default(now()) @map("signed_at")
+  ipAddress     String?  @map("ip_address")
+  signatureData Json?    @map("signature_data")
 
-  contract      Contract @relation(fields: [contractId], references: [id])
-  user          User     @relation(fields: [userId], references: [id])
+  contract Contract @relation(fields: [contractId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
 
   @@unique([contractId, userId])
+  @@map("contract_signatures")
 }
 
 model Project {
   id                    String        @id @default(uuid())
-  clientId              String
-  freelancerId          String?
-  freelancerInviteEmail String
-  inviteToken           String?       @unique
-  replacedAt            DateTime?
-  replacedById          String?
-  previousFreelancerId  String?
-  organizationId        String?
+  clientId              String        @map("client_id")
+  freelancerId          String?       @map("freelancer_id")
+  freelancerInviteEmail String        @map("freelancer_invite_email")
+  inviteToken           String?       @unique @map("invite_token")
+  replacedAt            DateTime?     @map("replaced_at")
+  replacedById          String?       @map("replaced_by_id")
+  previousFreelancerId  String?       @map("previous_freelancer_id")
+  organizationId        String?       @map("organization_id")
   title                 String
   description           String
-  totalAmount           Int
+  totalAmount           Int           @map("total_amount")
   currency              String        @default("USD")
   status                ProjectStatus @default(DRAFT)
-  isListed              Boolean       @default(false)
-  listedAt              DateTime?
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
+  isListed              Boolean       @default(false) @map("is_listed")
+  listedAt              DateTime?     @map("listed_at")
+  createdAt             DateTime      @default(now()) @map("created_at")
+  updatedAt             DateTime      @updatedAt @map("updated_at")
 
-  client                User          @relation("ClientProjects", fields: [clientId], references: [id])
-  freelancer            User?         @relation("FreelancerProjects", fields: [freelancerId], references: [id])
-  organization          Organization? @relation(fields: [organizationId], references: [id])
-  contract              Contract?
-  milestones            Milestone[]
-  proposals             Proposal[]
-  webhookIntegrations   WebhookIntegration[]
-  invoices              Invoice[]
-  messages              Message[]
-  riskSignals           RiskSignal[]
-  projectEvents         ProjectEvent[]
-  ratings               Rating[]
+  client              User                 @relation("ClientProjects", fields: [clientId], references: [id])
+  freelancer          User?                @relation("FreelancerProjects", fields: [freelancerId], references: [id])
+  organization        Organization?        @relation(fields: [organizationId], references: [id])
+  contract            Contract?
+  milestones          Milestone[]
+  proposals           Proposal[]
+  webhookIntegrations WebhookIntegration[]
+  invoices            Invoice[]
+  messages            Message[]
+  riskSignals         RiskSignal[]
+  projectEvents       ProjectEvent[]
+  ratings             Rating[]
 
   @@index([status])
+  @@map("projects")
 }
 
 model Milestone {
-  id                      String          @id @default(uuid())
-  projectId               String
-  sequence                Int
-  title                   String
-  deliverableDescription  String
-  amount                  Int
-  dueDate                 DateTime?
-  status                  MilestoneStatus @default(PENDING)
-  revisionCount           Int             @default(0)
-  createdAt               DateTime        @default(now())
-  updatedAt               DateTime        @updatedAt
+  id                     String          @id @default(uuid())
+  projectId              String          @map("project_id")
+  sequence               Int
+  title                  String
+  deliverableDescription String          @map("deliverable_description")
+  amount                 Int
+  dueDate                DateTime?       @map("due_date")
+  status                 MilestoneStatus @default(PENDING)
+  revisionCount          Int             @default(0) @map("revision_count")
+  createdAt              DateTime        @default(now()) @map("created_at")
+  updatedAt              DateTime        @updatedAt @map("updated_at")
 
-  project                 Project         @relation(fields: [projectId], references: [id])
-  escrowTransactions      EscrowTransaction[]
-  submissions             Submission[]
-  disputes                Dispute[]
+  project            Project             @relation(fields: [projectId], references: [id])
+  escrowTransactions EscrowTransaction[]
+  submissions        Submission[]
+  disputes           Dispute[]
 
   @@index([status])
+  @@map("milestones")
 }
 
 model Contract {
-  id                        String    @id @default(uuid())
-  projectId                 String    @unique
-  aiGeneratedDraft          Json
-  finalTerms                Json?
-  acceptedByFreelancerAt    DateTime?
-  acceptedIp                String?
-  pdfUrl                    String?
-  createdAt                 DateTime  @default(now())
+  id                     String    @id @default(uuid())
+  projectId              String    @unique @map("project_id")
+  aiGeneratedDraft       Json      @map("ai_generated_draft")
+  finalTerms             Json?     @map("final_terms")
+  acceptedByFreelancerAt DateTime? @map("accepted_by_freelancer_at")
+  acceptedIp             String?   @map("accepted_ip")
+  pdfUrl                 String?   @map("pdf_url")
+  createdAt              DateTime  @default(now()) @map("created_at")
 
-  project                   Project   @relation(fields: [projectId], references: [id])
-  signatures                ContractSignature[]
+  project    Project             @relation(fields: [projectId], references: [id])
+  signatures ContractSignature[]
+
+  @@map("contracts")
 }
 
 model EscrowTransaction {
   id                  String         @id @default(uuid())
-  milestoneId         String
+  milestoneId         String         @map("milestone_id")
   type                EscrowType
   amount              Int
   provider            EscrowProvider
-  providerReferenceId String
-  idempotencyKey      String         @unique
+  providerReferenceId String         @map("provider_reference_id")
+  idempotencyKey      String         @unique @map("idempotency_key")
   status              EscrowStatus   @default(PENDING)
-  createdAt           DateTime       @default(now())
+  createdAt           DateTime       @default(now()) @map("created_at")
 
-  milestone           Milestone      @relation(fields: [milestoneId], references: [id])
+  milestone Milestone @relation(fields: [milestoneId], references: [id])
 
-  @@index([idempotencyKey])
+  @@map("escrow_transactions")
 }
 
 model Submission {
-  id            String   @id @default(uuid())
-  milestoneId   String
-  description   String
-  fileUrls      String[]
-  linkEvidence  Json?
-  submittedAt   DateTime @default(now())
+  id           String   @id @default(uuid())
+  milestoneId  String   @map("milestone_id")
+  description  String
+  fileUrls     String[] @map("file_urls")
+  linkEvidence Json?    @map("link_evidence")
+  submittedAt  DateTime @default(now()) @map("submitted_at")
 
-  milestone     Milestone @relation(fields: [milestoneId], references: [id])
-  aiReview      AIReview?
+  milestone Milestone @relation(fields: [milestoneId], references: [id])
+  aiReview  AIReview?
+
+  @@map("submissions")
 }
 
 model AIReview {
-  id              String          @id @default(uuid())
-  submissionId    String          @unique
-  matchSummary    String
-  confidence      ConfidenceLevel
-  rawModelOutput  Json
-  modelVersion    String
-  createdAt       DateTime        @default(now())
+  id             String          @id @default(uuid())
+  submissionId   String          @unique @map("submission_id")
+  matchSummary   String          @map("match_summary")
+  confidence     ConfidenceLevel
+  rawModelOutput Json            @map("raw_model_output")
+  modelVersion   String          @map("model_version")
+  createdAt      DateTime        @default(now()) @map("created_at")
 
-  submission      Submission      @relation(fields: [submissionId], references: [id])
+  submission Submission @relation(fields: [submissionId], references: [id])
+
+  @@map("a_i_reviews")
 }
 
 model RiskSignal {
-  id          String    @id @default(uuid())
-  projectId   String
-  level       RiskLevel
-  reason      String
-  computedAt  DateTime  @default(now())
+  id         String    @id @default(uuid())
+  projectId  String    @map("project_id")
+  level      RiskLevel
+  reason     String
+  computedAt DateTime  @default(now()) @map("computed_at")
 
-  project     Project   @relation(fields: [projectId], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
 
   @@index([projectId, computedAt])
+  @@map("risk_signals")
 }
 
 model Dispute {
-  id                      String        @id @default(uuid())
-  milestoneId             String
-  openedBy                String
-  status                  DisputeStatus @default(EVIDENCE_PENDING)
-  aiSuggestedResolution   Json?
-  resolvedBy              String?
-  resolutionNotes         String?
-  createdAt               DateTime      @default(now())
-  resolvedAt              DateTime?
+  id                    String        @id @default(uuid())
+  milestoneId           String        @map("milestone_id")
+  openedBy              String        @map("opened_by")
+  status                DisputeStatus @default(EVIDENCE_PENDING)
+  aiSuggestedResolution Json?         @map("ai_suggested_resolution")
+  resolvedBy            String?       @map("resolved_by")
+  resolutionNotes       String?       @map("resolution_notes")
+  createdAt             DateTime      @default(now()) @map("created_at")
+  resolvedAt            DateTime?     @map("resolved_at")
 
-  milestone               Milestone     @relation(fields: [milestoneId], references: [id])
-  opener                  User          @relation("DisputeOpener", fields: [openedBy], references: [id])
-  resolver                User?         @relation("DisputeResolver", fields: [resolvedBy], references: [id])
-  evidences               DisputeEvidence[]
+  milestone Milestone         @relation(fields: [milestoneId], references: [id])
+  opener    User              @relation("DisputeOpener", fields: [openedBy], references: [id])
+  resolver  User?             @relation("DisputeResolver", fields: [resolvedBy], references: [id])
+  evidences DisputeEvidence[]
+
+  @@map("disputes")
 }
 
 model DisputeEvidence {
-  id            String   @id @default(uuid())
-  disputeId     String
-  submittedBy   String
-  statement     String
-  fileUrls      String[]
-  createdAt     DateTime @default(now())
+  id          String   @id @default(uuid())
+  disputeId   String   @map("dispute_id")
+  submittedBy String   @map("submitted_by")
+  statement   String
+  fileUrls    String[] @map("file_urls")
+  createdAt   DateTime @default(now()) @map("created_at")
 
-  dispute       Dispute  @relation(fields: [disputeId], references: [id])
-  submitter     User     @relation(fields: [submittedBy], references: [id])
+  dispute   Dispute @relation(fields: [disputeId], references: [id])
+  submitter User    @relation(fields: [submittedBy], references: [id])
+
+  @@map("dispute_evidences")
 }
 
 model Rating {
-  id          String   @id @default(uuid())
-  projectId   String
-  ratedBy     String
-  ratedUser   String
-  score       Int
-  comment     String?
-  createdAt   DateTime @default(now())
+  id        String   @id @default(uuid())
+  projectId String   @map("project_id")
+  ratedBy   String   @map("rated_by")
+  ratedUser String   @map("rated_user")
+  score     Int
+  comment   String?
+  createdAt DateTime @default(now()) @map("created_at")
 
-  project     Project  @relation(fields: [projectId], references: [id])
-  rater       User     @relation("RatingGiver", fields: [ratedBy], references: [id])
-  target      User     @relation("RatingReceiver", fields: [ratedUser], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
+  rater   User    @relation("RatingGiver", fields: [ratedBy], references: [id])
+  target  User    @relation("RatingReceiver", fields: [ratedUser], references: [id])
+
+  @@map("ratings")
 }
 
 model ProjectEvent {
-  id          String   @id @default(uuid())
-  projectId   String
-  actorId     String?
-  eventType   String
-  metadata    Json?
-  createdAt   DateTime @default(now())
+  id        String   @id @default(uuid())
+  projectId String   @map("project_id")
+  actorId   String?  @map("actor_id")
+  eventType String   @map("event_type")
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
 
-  project     Project  @relation(fields: [projectId], references: [id])
-  actor       User?    @relation(fields: [actorId], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
+  actor   User?   @relation(fields: [actorId], references: [id])
 
   @@index([projectId, createdAt])
+  @@map("project_events")
 }
 
 model Notification {
   id        String    @id @default(uuid())
-  userId    String
+  userId    String    @map("user_id")
   type      String
   payload   Json?
-  readAt    DateTime?
-  createdAt DateTime  @default(now())
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
 
-  user      User      @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
 }
 
 model Account {
   id                String  @id @default(uuid())
-  userId            String
+  userId            String  @map("user_id")
   type              String
   provider          String
-  providerAccountId String
+  providerAccountId String  @map("provider_account_id")
   refresh_token     String? @db.Text
   access_token      String? @db.Text
   expires_at        Int?
@@ -407,17 +434,20 @@ model Account {
   id_token          String? @db.Text
   session_state     String?
 
-  user              User    @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   @@unique([provider, providerAccountId])
+  @@map("accounts")
 }
 
 model Session {
   id           String   @id @default(uuid())
-  sessionToken String   @unique
-  userId       String
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id])
+
+  @@map("sessions")
 }
 
 model VerificationToken {
@@ -426,6 +456,7 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+  @@map("verification_tokens")
 }
 
 enum ProposalStatus {
@@ -452,130 +483,143 @@ enum InvoiceStatus {
 }
 
 model FreelancerProfile {
-  id          String   @id @default(uuid())
-  userId      String   @unique
-  title       String?
-  bio         String?
-  skills      String[]
-  hourlyRate  Int?
-  portfolio   Json?
+  id           String   @id @default(uuid())
+  userId       String   @unique @map("user_id")
+  title        String?
+  bio          String?
+  skills       String[]
+  hourlyRate   Int?     @map("hourly_rate")
+  portfolio    Json?
   availability String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  user        User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("freelancer_profiles")
 }
 
 model Proposal {
   id                String         @id @default(uuid())
-  projectId         String
-  freelancerId      String
-  coverLetter       String
-  bidAmount         Int
-  estimatedDuration Int?
+  projectId         String         @map("project_id")
+  freelancerId      String         @map("freelancer_id")
+  coverLetter       String         @map("cover_letter")
+  bidAmount         Int            @map("bid_amount")
+  estimatedDuration Int?           @map("estimated_duration")
   status            ProposalStatus @default(PENDING)
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
 
-  project           Project        @relation(fields: [projectId], references: [id])
-  freelancer        User           @relation(fields: [freelancerId], references: [id])
+  project    Project @relation(fields: [projectId], references: [id])
+  freelancer User    @relation(fields: [freelancerId], references: [id])
 
   @@index([projectId, status])
+  @@map("proposals")
 }
 
 model WebhookIntegration {
-  id              String             @id @default(uuid())
-  projectId       String
+  id              String              @id @default(uuid())
+  projectId       String              @map("project_id")
   provider        IntegrationProvider
   name            String
-  webhookUrl      String
+  webhookUrl      String              @map("webhook_url")
   secret          String?
   events          String[]
-  isActive        Boolean            @default(true)
-  lastTriggeredAt DateTime?
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  isActive        Boolean             @default(true) @map("is_active")
+  lastTriggeredAt DateTime?           @map("last_triggered_at")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
 
-  project         Project            @relation(fields: [projectId], references: [id])
-  deliveries      WebhookDelivery[]
+  project    Project           @relation(fields: [projectId], references: [id])
+  deliveries WebhookDelivery[]
+
+  @@map("webhook_integrations")
 }
 
 model WebhookDelivery {
-  id              String   @id @default(uuid())
-  integrationId   String
-  event           String
-  payload         Json
-  status          String
-  responseCode    Int?
-  responseBody    String?
-  createdAt       DateTime @default(now())
+  id            String   @id @default(uuid())
+  integrationId String   @map("integration_id")
+  event         String
+  payload       Json
+  status        String
+  responseCode  Int?     @map("response_code")
+  responseBody  String?  @map("response_body")
+  createdAt     DateTime @default(now()) @map("created_at")
 
-  integration     WebhookIntegration @relation(fields: [integrationId], references: [id])
+  integration WebhookIntegration @relation(fields: [integrationId], references: [id])
+
+  @@map("webhook_deliveries")
 }
 
 model Invoice {
   id          String        @id @default(uuid())
-  projectId   String
-  fromUserId  String
-  toUserId    String
-  lineItems   Json
+  projectId   String        @map("project_id")
+  fromUserId  String        @map("from_user_id")
+  toUserId    String        @map("to_user_id")
+  lineItems   Json          @map("line_items")
   subtotal    Int
-  taxPercent  Int           @default(0)
-  taxAmount   Int           @default(0)
-  totalAmount Int
+  taxPercent  Int           @default(0) @map("tax_percent")
+  taxAmount   Int           @default(0) @map("tax_amount")
+  totalAmount Int           @map("total_amount")
   currency    String        @default("USD")
   status      InvoiceStatus @default(DRAFT)
-  dueDate     DateTime?
-  paidAt      DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  dueDate     DateTime?     @map("due_date")
+  paidAt      DateTime?     @map("paid_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
 
-  project     Project       @relation(fields: [projectId], references: [id])
-  fromUser    User          @relation("InvoiceSender", fields: [fromUserId], references: [id])
-  toUser      User          @relation("InvoiceRecipient", fields: [toUserId], references: [id])
+  project  Project @relation(fields: [projectId], references: [id])
+  fromUser User    @relation("InvoiceSender", fields: [fromUserId], references: [id])
+  toUser   User    @relation("InvoiceRecipient", fields: [toUserId], references: [id])
+
+  @@map("invoices")
 }
 
 model TaxInfo {
   id         String   @id @default(uuid())
-  userId     String
-  taxId      String
-  taxType    String
+  userId     String   @map("user_id")
+  taxId      String   @map("tax_id")
+  taxType    String   @map("tax_type")
   country    String
   address    String?
-  isVerified Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  isVerified Boolean  @default(false) @map("is_verified")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
-  user       User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   @@unique([userId, taxType])
+  @@map("tax_infos")
 }
 
 model AuditLog {
   id           String   @id @default(uuid())
-  userId       String
+  userId       String   @map("user_id")
   action       String
-  resourceType String
-  resourceId   String?
+  resourceType String   @map("resource_type")
+  resourceId   String?  @map("resource_id")
   metadata     Json?
-  ipAddress    String?
-  createdAt    DateTime @default(now())
+  ipAddress    String?  @map("ip_address")
+  createdAt    DateTime @default(now()) @map("created_at")
 
-  user         User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   @@index([userId, createdAt])
   @@index([resourceType, resourceId])
+  @@map("audit_logs")
 }
 
 model PushSubscription {
   id        String   @id @default(uuid())
-  userId    String
+  userId    String   @map("user_id")
   endpoint  String   @unique
-  p256dhKey String
-  authKey   String
-  createdAt DateTime @default(now())
+  p256dhKey String   @map("p256dh_key")
+  authKey   String   @map("auth_key")
+  createdAt DateTime @default(now()) @map("created_at")
 
-  user      User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("push_subscriptions")
 }
 
 enum MessageType {
@@ -585,17 +629,18 @@ enum MessageType {
 }
 
 model Message {
-  id          String      @id @default(uuid())
-  projectId   String
-  senderId    String
-  content     String
-  type        MessageType @default(TEXT)
-  fileUrl     String?
-  readAt      DateTime?
-  createdAt   DateTime    @default(now())
+  id        String      @id @default(uuid())
+  projectId String      @map("project_id")
+  senderId  String      @map("sender_id")
+  content   String
+  type      MessageType @default(TEXT)
+  fileUrl   String?     @map("file_url")
+  readAt    DateTime?   @map("read_at")
+  createdAt DateTime    @default(now()) @map("created_at")
 
-  project     Project     @relation(fields: [projectId], references: [id])
-  sender      User        @relation(fields: [senderId], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
+  sender  User    @relation(fields: [senderId], references: [id])
 
   @@index([projectId, createdAt])
+  @@map("messages")
 }

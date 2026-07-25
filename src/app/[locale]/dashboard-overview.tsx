@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { Shield, TrendingUp, Star, ChevronRight, Clock, Layers, FileCheck, CircleDashed, AlertTriangle } from "lucide-react"
+import { Shield, TrendingUp, Star, ChevronRight, Clock, Layers, FileCheck, CircleDashed } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -97,7 +97,7 @@ function TrustScoreGauge({ score }: { score: number }) {
   )
 }
 
-function PhaseCard({ phase, onAction }: { phase: NonNullable<DashboardData["currentPhase"]>; onAction?: () => void }) {
+function PhaseCard({ phase }: { phase: NonNullable<DashboardData["currentPhase"]> }) {
   const phaseLabels: Record<string, { label: string; icon: typeof Clock; variant: "warning" | "info" | "accent" }> = {
     draft: { label: "Draft — Review & send to freelancer", icon: FileCheck, variant: "warning" },
     funding: { label: "Awaiting Funding — Fund escrow to start", icon: Clock, variant: "info" },
@@ -165,7 +165,6 @@ export function DashboardOverview() {
 
   const { escrow, aiTrustScore, currentPhase, milestones, projects } = data
 
-  const currencyFormatter = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0, maximumFractionDigits: 0 })
   const usdFormatter = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 })
 
   return (

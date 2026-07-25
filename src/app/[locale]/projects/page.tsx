@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
+import Image from "next/image"
 
 export default async function ProjectsPage() {
   const session = await auth()
@@ -83,7 +84,7 @@ export default async function ProjectsPage() {
           </div>
           <div className="flex items-center gap-3 px-2 py-2">
             <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden shrink-0">
-               {user.avatarUrl ? <img src={user.avatarUrl} alt="avatar" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-[#4F46E5]"></div>}
+               {user.avatarUrl ? <Image src={user.avatarUrl} alt="User avatar" width={36} height={36} unoptimized className="w-full h-full object-cover" /> : <div className="w-full h-full bg-[#4F46E5]"></div>}
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-[#0F172A] truncate">{user.name}</p>
@@ -111,8 +112,8 @@ export default async function ProjectsPage() {
             </button>
             <div className="h-6 w-px bg-gray-200"></div>
             <div className="flex items-center gap-2 cursor-pointer">
-              <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden shrink-0">
-                 {user.avatarUrl ? <img src={user.avatarUrl} alt="avatar" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-[#4F46E5]"></div>}
+              <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden shrink-0 hidden lg:block cursor-pointer">
+                {user.avatarUrl ? <Image src={user.avatarUrl} alt="avatar" width={36} height={36} unoptimized className="w-full h-full object-cover" /> : <div className="w-full h-full bg-[#4F46E5]"></div>}
               </div>
               <span className="text-sm font-semibold text-[#0F172A] hidden md:block">{user.name?.split(' ')[0]}</span>
             </div>
@@ -244,12 +245,12 @@ export default async function ProjectsPage() {
                 {allProjects.map((project) => {
                   const isHealthy = project.riskSignals.length === 0
                   
-                  let currentMilestone = project.milestones.find(m => m.status !== 'COMPLETED')
+                  let currentMilestone = project.milestones.find(m => m.status !== 'PAID')
                   if (!currentMilestone) {
                     currentMilestone = project.milestones[project.milestones.length - 1] // if all completed, take last
                   }
                   
-                  const completedMilestones = project.milestones.filter(m => m.status === 'COMPLETED').length
+                  const completedMilestones = project.milestones.filter(m => m.status === 'PAID').length
                   const totalMilestones = project.milestones.length || 1
                   const progressPct = Math.round((completedMilestones / totalMilestones) * 100)
 
@@ -263,7 +264,7 @@ export default async function ProjectsPage() {
 
                   let milestoneStatusText = "In Progress"
                   let milestoneStatusColor = "text-[#4F46E5]"
-                  if (currentMilestone?.status === "COMPLETED") {
+                  if (currentMilestone?.status === "PAID") {
                     milestoneStatusText = "Completed"
                     milestoneStatusColor = "text-[#10B981]"
                   }
@@ -273,7 +274,7 @@ export default async function ProjectsPage() {
                   let dueColor = ""
                   if (dueDate) {
                     const diffDays = Math.ceil((dueDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24))
-                    if (currentMilestone?.status === "COMPLETED") {
+                    if (currentMilestone?.status === "PAID") {
                        dueText = "Completed"
                        dueColor = "text-[#64748B]"
                     } else if (diffDays < 0) {
@@ -298,7 +299,7 @@ export default async function ProjectsPage() {
                             {getStatusBadge(project.status)}
                           </div>
                           <div className="text-[11px] text-[#64748B] flex items-center gap-1.5 truncate">
-                            <img src={project.freelancer?.avatarUrl || `https://ui-avatars.com/api/?name=${project.freelancer?.name || 'F'}`} className="w-4 h-4 rounded-full object-cover" />
+                            <Image src={project.freelancer?.avatarUrl || `https://ui-avatars.com/api/?name=${project.freelancer?.name || 'F'}`} alt="Freelancer avatar" width={16} height={16} unoptimized className="w-4 h-4 rounded-full object-cover" />
                             {project.freelancer?.name}
                             <span className="text-gray-300">·</span>
                             <span className="text-[#10B981] font-semibold flex items-center gap-0.5"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>4.9</span>
