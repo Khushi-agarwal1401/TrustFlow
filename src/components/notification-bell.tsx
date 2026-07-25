@@ -5,9 +5,9 @@ import { useSession } from "next-auth/react"
 
 interface Notification {
   id: string
-  title: string
-  message: string
-  read: boolean
+  type: string
+  payload: { title?: string; message?: string } | null
+  readAt: string | null
   createdAt: string
 }
 
@@ -30,7 +30,7 @@ export function NotificationBell() {
     return () => document.removeEventListener("mousedown", handleClick)
   }, [])
 
-  const unread = notifications.filter((n) => !n.read).length
+  const unread = notifications.filter((n) => !n.readAt).length
 
   async function markRead(id: string) {
     await fetch("/api/notifications", {
@@ -38,7 +38,7 @@ export function NotificationBell() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     })
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, readAt: new Date().toISOString() } : n)))
   }
 
   if (!session?.user) return null
@@ -67,11 +67,11 @@ export function NotificationBell() {
             notifications.map((n) => (
               <div
                 key={n.id}
-                className={`p-3 border-b border-border-subtle cursor-pointer hover:bg-bg-hover ${!n.read ? "bg-accent-subtle" : ""}`}
+                className={`p-3 border-b border-border-subtle cursor-pointer hover:bg-bg-hover ${!n.readAt ? "bg-accent-subtle" : ""}`}
                 onClick={() => markRead(n.id)}
               >
-                <p className="text-sm font-medium text-text-primary">{n.title}</p>
-                <p className="text-xs text-text-muted mt-1">{n.message}</p>
+                <p className="text-sm font-medium text-text-primary">{n.payload?.title || n.type}</p>
+                <p className="text-xs text-text-muted mt-1">{n.payload?.message || JSON.stringify(n.payload)}</p>
               </div>
             ))
           )}

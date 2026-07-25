@@ -28,8 +28,8 @@ export default function ProjectProposalsPage({ params }: { params: Promise<{ id:
     })
   }, [id])
 
-  async function handleSubmitProposal(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleSubmitProposal() {
+    if (!coverLetter || !bidAmount) return
     setSubmitting(true)
     const res = await fetch("/api/proposals", {
       method: "POST",
@@ -40,76 +40,148 @@ export default function ProjectProposalsPage({ params }: { params: Promise<{ id:
       setShowForm(false)
       setCoverLetter("")
       setBidAmount("")
-      const props = await fetch(`/api/proposals?projectId=${id}`).then((r) => r.json())
-      setProposals(props)
+      const refreshed = await fetch(`/api/proposals?projectId=${id}`).then((r) => r.json())
+      setProposals(refreshed)
     }
     setSubmitting(false)
   }
 
-  async function handleAction(proposalId: string, action: string) {
-    await fetch(`/api/proposals/${proposalId}`, {
+  async function handleAccept(proposalId: string) {
+    const res = await fetch(`/api/proposals/${proposalId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action }),
+      body: JSON.stringify({ action: "accept" }),
     })
-    router.refresh()
+    if (res.ok) {
+      const refreshed = await fetch(`/api/proposals?projectId=${id}`).then((r) => r.json())
+      setProposals(refreshed)
+    }
   }
 
-  if (loading) return <div className="p-6 text-text-muted">Loading...</div>
+  async function handleReject(proposalId: string) {
+    const res = await fetch(`/api/proposals/${proposalId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "reject" }),
+    })
+    if (res.ok) {
+      const refreshed = await fetch(`/api/proposals?projectId=${id}`).then((r) => r.json())
+      setProposals(refreshed)
+    }
+  }
+
+  async function handleWithdraw(proposalId: string) {
+    const res = await fetch(`/api/proposals/${proposalId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "withdraw" }),
+    })
+    if (res.ok) {
+      const refreshed = await fetch(`/api/proposals?projectId=${id}`).then((r) => r.json())
+      setProposals(refreshed)
+    }
+  }
+
+  if (loading) return (
+    <div className="max-w-4xl mx-auto px-6 py-6">
+      <div className="skeleton h-5 w-24 mb-8" />
+      <div className="card-double"><div className="card-inner space-y-4"><div className="skeleton h-6 w-48" /><div className="skeleton h-24 w-full" /></div></div>
+    </div>
+  )
+
   if (!project) return <div className="p-6 text-text-muted">Project not found</div>
 
-  const isClient = project.clientId === session?.user?.id
-  const isFreelancer = !isClient && session?.user?.id
+  const isClient = session?.user?.id === project.clientId
+  const canPropose = !isClient && project.isListed
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <Link href={`/projects/${id}`} className="text-text-secondary text-sm hover:text-text-primary">&larr; Back to project</Link>
-      <h1 className="text-2xl font-bold mt-4 mb-2" style={{ fontFamily: "var(--font-poppins)" }}>{project.title}</h1>
-      <p className="text-text-secondary text-sm mb-6">${(project.totalAmount / 100).toLocaleString()} · {proposals.length} proposals</p>
+    <div className="max-w-4xl mx-auto px-6 py-6">
+      <Link href={`/projects/${id}`} className="text-text-secondary text-sm hover:text-text-primary transition">&larr; Back to Project</Link>
 
-      {isFreelancer && !showForm && (
-        <button onClick={() => setShowForm(true)} className="btn-primary mb-6">Submit Proposal</button>
-      )}
+      <div className="mt-6 flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-xl font-bold" style={{ fontFamily: "var(--font-poppins)" }}>Proposals</h1>
+          <p className="text-text-secondary text-sm mt-0.5">for {project.title}</p>
+        </div>
+        {canPropose && (
+          <button onClick={() => setShowForm(!showForm)} className="btn-primary text-sm">
+            {showForm ? "Cancel" : "Submit Proposal"}
+          </button>
+        )}
+      </div>
 
       {showForm && (
-        <form onSubmit={handleSubmitProposal} className="card p-4 mb-6 space-y-3">
-          <h3 className="font-semibold">New Proposal</h3>
-          <textarea className="input min-h-[120px]" value={coverLetter} onChange={(e) => setCoverLetter(e.target.value)} placeholder="Cover letter..." required />
-          <input className="input" type="number" value={bidAmount} onChange={(e) => setBidAmount(e.target.value)} placeholder="Bid amount (USD)" min="0" step="0.01" required />
-          <div className="flex gap-2">
-            <button type="submit" disabled={submitting} className="btn-primary flex-1">{submitting ? "Submitting..." : "Submit"}</button>
-            <button type="button" onClick={() => setShowForm(false)} className="btn-ghost">Cancel</button>
+        <div className="card-double mb-6 animate-fade-up">
+          <div className="card-inner space-y-4">
+            <h3 className="font-semibold" style={{ fontFamily: "var(--font-poppins)" }}>Submit Your Proposal</h3>
+            <div>
+              <label className="text-sm text-text-secondary mb-1.5 block">Cover Letter</label>
+              <textarea className="input min-h-[120px] resize-y" value={coverLetter} onChange={(e) => setCoverLetter(e.target.value)} placeholder="Why are you the right fit for this project?" />
+            </div>
+            <div>
+              <label className="text-sm text-text-secondary mb-1.5 block">Bid Amount (USD)</label>
+              <input className="input" type="number" value={bidAmount} onChange={(e) => setBidAmount(e.target.value)} placeholder="Your bid" />
+            </div>
+            <button onClick={handleSubmitProposal} disabled={submitting || !coverLetter || !bidAmount} className="btn-primary">
+              {submitting ? "Submitting..." : "Submit Proposal"}
+            </button>
           </div>
-        </form>
+        </div>
       )}
 
-      <div className="space-y-3">
+      <div className="space-y-3 animate-fade-up stagger-2">
         {proposals.length === 0 ? (
-          <p className="text-text-muted text-sm">No proposals yet</p>
-        ) : (
-          proposals.map((p) => (
-            <div key={p.id} className="card p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <Link href={`/profile/${p.freelancer.id}`} className="font-semibold text-sm hover:text-accent-primary">{p.freelancer.name}</Link>
-                    <span className="text-xs capitalize px-2 py-0.5 rounded-full bg-bg-elevated text-text-muted">{p.status.toLowerCase()}</span>
-                  </div>
-                  <p className="text-sm text-text-secondary mt-1">{p.coverLetter}</p>
-                  <p className="text-xs text-text-muted mt-1">Bid: <span className="text-accent-primary font-medium">${(p.bidAmount / 100).toLocaleString()}</span> · {new Date(p.createdAt).toLocaleDateString()}</p>
-                </div>
-                {isClient && p.status === "PENDING" && (
-                  <div className="flex gap-2 ml-4">
-                    <button onClick={() => handleAction(p.id, "ACCEPT")} className="text-success text-sm font-medium">Accept</button>
-                    <button onClick={() => handleAction(p.id, "REJECT")} className="text-danger text-sm">Reject</button>
-                  </div>
-                )}
-                {p.freelancer.id === session?.user?.id && p.status === "PENDING" && (
-                  <button onClick={() => handleAction(p.id, "WITHDRAW")} className="text-danger text-sm ml-4">Withdraw</button>
-                )}
-              </div>
+          <div className="card-double"><div className="card-inner text-center py-12">
+            <div className="w-12 h-12 rounded-full bg-bg-elevated flex items-center justify-center mx-auto mb-3">
+              <svg className="w-6 h-6 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
             </div>
-          ))
+            <p className="text-text-muted">{isClient ? "No proposals yet" : "No proposals submitted yet"}</p>
+            {canPropose && <p className="text-text-muted text-sm mt-1">Submit your proposal above</p>}
+          </div></div>
+        ) : (
+          proposals.map((p, i) => {
+            const isMine = session?.user?.id === p.freelancer.id
+            return (
+              <div key={p.id} className={`card-double animate-fade-up stagger-${Math.min(i + 1, 6)}`}>
+                <div className="card-inner">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-accent-primary/10 flex items-center justify-center text-accent-primary font-semibold text-sm">
+                        {p.freelancer.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">{p.freelancer.name}</p>
+                        <p className="text-xs text-text-muted">{new Date(p.createdAt).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold" style={{ fontFamily: "var(--font-poppins)" }}>${(p.bidAmount / 100).toLocaleString()}</p>
+                      <span className={`badge ${
+                        p.status === "ACCEPTED" ? "bg-success/10 text-success" :
+                        p.status === "REJECTED" ? "bg-danger/10 text-danger" :
+                        p.status === "WITHDRAWN" ? "bg-text-muted/10 text-text-muted" :
+                        "bg-warning/10 text-warning"
+                      }`}>{p.status.toLowerCase()}</span>
+                    </div>
+                  </div>
+                  <p className="text-sm text-text-secondary leading-relaxed">{p.coverLetter}</p>
+                  {isClient && p.status === "PENDING" && (
+                    <div className="flex gap-2 mt-3 pt-3 border-t border-border-subtle">
+                      <button onClick={() => handleAccept(p.id)} className="btn-primary text-xs">Accept</button>
+                      <button onClick={() => handleReject(p.id)} className="btn-ghost text-xs">Reject</button>
+                    </div>
+                  )}
+                  {isMine && p.status === "PENDING" && (
+                    <div className="mt-3 pt-3 border-t border-border-subtle">
+                      <button onClick={() => handleWithdraw(p.id)} className="text-danger text-xs hover:underline">Withdraw</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })
         )}
       </div>
     </div>
