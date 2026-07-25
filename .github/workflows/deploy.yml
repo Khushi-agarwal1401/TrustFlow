@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
 
+env:
+  AUTH_SECRET: "ci-secret-long-enough-for-testing-purposes-abc123"
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -15,6 +18,8 @@ jobs:
       - name: Run database migrations
         run: |
           npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - name: Deploy
         run: |
           echo "Deployment step — customize for your target platform (VPS, Railway, Fly.io, etc.)"

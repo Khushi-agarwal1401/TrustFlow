@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/trustflow"
+  AUTH_SECRET: "ci-secret-long-enough-for-testing-purposes-abc123"
+
 jobs:
   lint-and-typecheck:
     runs-on: ubuntu-latest
@@ -44,4 +48,6 @@ jobs:
       - run: npm ci
       - run: npx prisma generate
       - run: npx prisma db push
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/trustflow"
       - run: npx vitest run
