@@ -1,4 +1,4 @@
-import { openai } from "./openai"
+import { getGeminiModel } from "./gemini"
 
 interface MilestoneInput {
   title: string
@@ -36,16 +36,15 @@ Return JSON exactly in this format (no markdown, no code fences):
   "terms": "string (a short paragraph of standard freelance terms)"
 }`
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [{ role: "user", content: prompt }],
-    response_format: { type: "json_object" },
+  const model = getGeminiModel({
     temperature: 0.7,
-    max_tokens: 2000,
+    maxOutputTokens: 2000,
+    responseMimeType: "application/json",
   })
 
-  const content = response.choices[0]?.message?.content
-  if (!content) throw new Error("Empty response from OpenAI")
+  const result = await model.generateContent(prompt)
+  const content = result.response.text()
+  if (!content) throw new Error("Empty response from Gemini")
 
   const parsed = JSON.parse(content) as ContractOutput
 

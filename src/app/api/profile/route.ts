@@ -19,12 +19,12 @@ export async function PUT(request: NextRequest) {
   const error = requireAuth(user)
   if (error) return error
 
-  const { title, bio, skills, hourlyRate, portfolio, availability } = await request.json()
+  const { title, bio, skills, hourlyRate, portfolio, availability, country, city } = await request.json()
 
   const profile = await prisma.freelancerProfile.upsert({
     where: { userId: user!.id },
-    update: { title, bio, skills, hourlyRate: hourlyRate ? Math.round(hourlyRate * 100) : undefined, portfolio, availability },
-    create: { userId: user!.id, title, bio, skills: skills || [], hourlyRate: hourlyRate ? Math.round(hourlyRate * 100) : undefined, portfolio, availability },
+    update: { title, bio, skills, hourlyRate: hourlyRate ? Math.round(hourlyRate * 100) : undefined, portfolio, availability, country, city },
+    create: { userId: user!.id, title, bio, skills: skills || [], hourlyRate: hourlyRate ? Math.round(hourlyRate * 100) : undefined, portfolio, availability, country, city },
   })
 
   return NextResponse.json(profile)

@@ -5,6 +5,7 @@ import Resend from "next-auth/providers/resend"
 import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { PrismaAdapter } from "@auth/prisma-adapter"
+import type { UserRole } from "@prisma/client"
 import { prisma } from "./prisma"
 import "./auth-types"
 
@@ -100,16 +101,31 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   pages: { signIn: "/auth/signin" },
   session: { strategy: "jwt" },
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id
         token.image = (user as AdapterUser & { avatarUrl?: string | null }).avatarUrl ?? user.image
+      }
+      // Fetch roles on first JWT creation or refresh
+      if (token.id && (!token.roles || account)) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { roles: true },
+          })
+          if (dbUser) {
+            token.roles = dbUser.roles
+          }
+        } catch {
+          // Gracefully fail — roles are non-critical for caching
+        }
       }
       return token
     },
     session({ session, token }) {
       if (session.user && token.id) {
         session.user.id = token.id as string
+        session.user.roles = token.roles as UserRole[] | undefined
         if (token.image) {
           session.user.image = token.image as string
         }
