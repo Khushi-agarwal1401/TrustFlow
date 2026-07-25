@@ -79,20 +79,26 @@ export default function FundPage({ params }: { params: Promise<{ id: string }> }
     async function load() {
       try {
         const projRes = await fetch(`/api/projects/${id}`)
-        if (!projRes.ok) throw new Error("Failed to load project")
-        const projData = await projRes.json()
-        setProject(projData)
+        const projResText = await projRes.text()
+        let projData: Record<string, unknown> = {}
+        try { projData = projResText ? JSON.parse(projResText) : {} } catch {}
+        
+        if (!projRes.ok) throw new Error((projData.error as string) || "Failed to load project")
+        setProject(projData as unknown as { title: string; totalAmount: number; milestones: { title: string; amount: number }[] })
 
         const intRes = await fetch("/api/escrow/create-intent", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ projectId: id }),
         })
-        const intData = await intRes.json()
+        const intResText = await intRes.text()
+        let intData: Record<string, unknown> = {}
+        try { intData = intResText ? JSON.parse(intResText) : {} } catch {}
+        
         if (!intRes.ok) {
-          setError(intData.error || "Failed to create payment intent")
+          setError((intData.error as string) || "Failed to create payment intent")
         } else {
-          setClientSecret(intData.clientSecret)
+          setClientSecret(intData.clientSecret as string)
         }
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : String(err))

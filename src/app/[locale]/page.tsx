@@ -370,8 +370,16 @@ export default async function Dashboard() {
                         <div>
                           <p className="text-[10px] text-[#64748B] mb-1">Freelancer</p>
                           <div className="flex items-center gap-1.5">
-                            <div className="w-5 h-5 rounded-full bg-gray-200 overflow-hidden"><Image src={project.freelancer?.avatarUrl || ''} alt="Freelancer avatar" width={20} height={20} unoptimized className="w-full h-full object-cover" /></div>
-                            <span className="text-xs font-semibold text-[#0F172A]">{project.freelancer?.name}</span>
+                            <div className="w-5 h-5 rounded-full bg-gray-200 overflow-hidden">
+                              {project.freelancer?.avatarUrl ? (
+                                <Image src={project.freelancer.avatarUrl} alt="Freelancer avatar" width={20} height={20} unoptimized className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full bg-[#4F46E5] flex items-center justify-center text-[10px] text-white font-bold">
+                                  {project.freelancer?.name?.charAt(0) || '?'}
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-xs font-semibold text-[#0F172A]">{project.freelancer?.name || 'Unassigned'}</span>
                           </div>
                         </div>
                         <div>
