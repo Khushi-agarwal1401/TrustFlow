@@ -3,6 +3,10 @@ import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { ProjectActions } from "./project-actions"
 import { MilestoneActions } from "./milestone-actions"
+import { DeadlinePredict } from "./deadline-predict"
+import { ProgressReport } from "./progress-report"
+import { RiskHistory } from "./risk-history"
+import { ReplaceFreelancer } from "./replace-freelancer"
 import Link from "next/link"
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -42,6 +46,11 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   const isFreelancer = project.freelancerId === session.user.id
   const latestRisk = project.riskSignals[0]
 
+  const milestoneSnaps = project.milestones.map(m => ({
+    title: m.title,
+    status: m.status
+  }))
+
   const statusColor: Record<string, string> = {
     DRAFT: "text-text-muted", AWAITING_ACCEPTANCE: "text-warning", AWAITING_FUNDING: "text-info",
     DECLINED: "text-danger", IN_PROGRESS: "text-accent-primary", COMPLETED: "text-success",
@@ -69,7 +78,10 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             <div className="card-inner space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold" style={{ fontFamily: "var(--font-poppins)" }}>Milestones</h2>
-                <span className="badge bg-bg-elevated text-text-secondary">{project.milestones.length} total</span>
+                <div className="flex items-center gap-2">
+                  {isClient && <DeadlinePredict projectId={id} />}
+                  <span className="badge bg-bg-elevated text-text-secondary">{project.milestones.length} total</span>
+                </div>
               </div>
               <div className="space-y-3">
                 {project.milestones.map((m, i) => {
@@ -115,8 +127,50 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
                             </div>
                           )}
                           
+                          {m.submissions?.[0] && (
+                            <div className="mt-3 p-3 rounded-lg border border-border-subtle bg-bg-base space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">Submission</span>
+                                <span className="text-[10px] text-text-muted">{new Date(m.submissions[0].submittedAt).toLocaleDateString()}</span>
+                              </div>
+                              {m.submissions[0].fileUrls.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {m.submissions[0].fileUrls.map((url: string, fi: number) => (
+                                    <a key={fi} href={url} target="_blank" className="text-[10px] text-accent-primary hover:underline bg-accent-subtle px-2 py-0.5 rounded">
+                                      File {fi + 1}
+                                    </a>
+                                  ))}
+                                </div>
+                              )}
+                              {m.submissions[0].linkEvidence && Array.isArray(m.submissions[0].linkEvidence) && (
+                                <div className="space-y-1">
+                                  {(m.submissions[0].linkEvidence as { label: string; url: string }[]).map((link: { label: string; url: string }, li: number) => (
+                                    <a key={li} href={link.url} target="_blank" className="block text-[10px] text-accent-primary hover:underline">
+                                      {link.label || link.url}
+                                    </a>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
                           {isClient && m.status === "SUBMITTED" && (
-                            <MilestoneActions milestoneId={m.id} />
+                            <MilestoneActions milestoneId={m.id} milestoneStatus={m.status} isClient={isClient} />
+                          )}
+
+                          {isFreelancer && m.status === "REVISION_REQUESTED" && (
+                            <div className="mt-2 p-2 rounded-lg bg-warning/10 border border-warning/20">
+                              <p className="text-xs text-warning font-medium">Revision requested — please update and resubmit</p>
+                            </div>
+                          )}
+
+                          {isFreelancer && m.status === "PENDING" && (
+                            <Link
+                              href={`/projects/${id}/submit/${m.id}`}
+                              className="inline-block mt-2 text-xs text-accent-primary hover:underline font-medium"
+                            >
+                              Submit Work →
+                            </Link>
                           )}
                         </div>
                       </div>
@@ -138,9 +192,14 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             </div>
           )}
 
-          {project.status === "DRAFT" && isClient && (
+          {isClient && (project.status === "DRAFT" || project.status === "AWAITING_ACCEPTANCE") && (
             <div className="animate-fade-up stagger-3">
               <ProjectActions projectId={project.id} />
+              {project.freelancer && (
+                <div className="mt-3">
+                  <ReplaceFreelancer projectId={id} isClient={isClient} hasFreelancer={!!project.freelancer} />
+                </div>
+              )}
             </div>
           )}
 
@@ -194,37 +253,49 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
                   <span className="font-medium">{new Date(project.createdAt).toLocaleDateString()}</span>
                 </div>
               </div>
+              <div className="border-t border-border-subtle pt-3">
+                <ProgressReport
+                  projectId={id}
+                  projectTitle={project.title}
+                  milestones={milestoneSnaps}
+                />
+              </div>
             </div>
           </div>
 
-          {latestRisk && (
-            <div className={`card-double animate-fade-up stagger-3`}>
-              <div className="card-inner">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ fontFamily: "var(--font-poppins)" }}>Risk</h3>
-                  <span className={`badge ${latestRisk.level === "RED" ? "bg-danger/10 text-danger" : latestRisk.level === "AMBER" ? "bg-warning/10 text-warning" : "bg-success/10 text-success"}`}>
-                    {latestRisk.level}
-                  </span>
-                </div>
-                {latestRisk.reason && (
-                  <p className="text-xs text-text-secondary leading-relaxed">{latestRisk.reason}</p>
+          <div className="card-double animate-fade-up stagger-3">
+            <div className="card-inner">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ fontFamily: "var(--font-poppins)" }}>Risk</h3>
+                {latestRisk && (
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${latestRisk.level === "RED" ? "bg-danger" : latestRisk.level === "AMBER" ? "bg-warning" : "bg-success"}`} />
+                    <span className={`badge ${latestRisk.level === "RED" ? "bg-danger/10 text-danger" : latestRisk.level === "AMBER" ? "bg-warning/10 text-warning" : "bg-success/10 text-success"}`}>
+                      {latestRisk.level}
+                    </span>
+                  </div>
                 )}
               </div>
+              {latestRisk?.reason && (
+                <p className="text-xs text-text-secondary leading-relaxed mb-3">{latestRisk.reason}</p>
+              )}
+              <RiskHistory projectId={id} />
             </div>
-          )}
+          </div>
 
           <div className="card-double animate-fade-up stagger-4">
             <div className="card-inner">
               <h3 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-3" style={{ fontFamily: "var(--font-poppins)" }}>Quick Links</h3>
               <div className="space-y-2">
-                <a href={`/projects/${id}/contract`} className="block text-sm text-accent-primary hover:underline">View Contract</a>
-                <a href={`/projects/${id}/fund`} className="block text-sm text-accent-primary hover:underline">Fund Milestones</a>
-                <a href={`/projects/${id}/legal`} className="block text-sm text-accent-primary hover:underline">Legal & Signatures</a>
-                <a href={`/projects/${id}/audit`} className="block text-sm text-accent-primary hover:underline">Audit Log</a>
-                <a href={`/projects/${id}/dispute`} className="block text-sm text-danger hover:underline">Dispute Resolution</a>
+                <Link href={`/projects/${id}/contract`} className="block text-sm text-accent-primary hover:underline">View Contract</Link>
+                <Link href={`/projects/${id}/fund`} className="block text-sm text-accent-primary hover:underline">Fund Milestones</Link>
+                <Link href={`/projects/${id}/legal`} className="block text-sm text-accent-primary hover:underline">Legal & Signatures</Link>
                 {isFreelancer && (
-                  <a href={`/projects/${id}/proposals`} className="block text-sm text-accent-primary hover:underline">Proposals</a>
+                  <Link href={`/projects/${id}/proposals`} className="block text-sm text-accent-primary hover:underline">Proposals</Link>
                 )}
+                <Link href="/disputes" className="block text-sm text-danger hover:underline">View Disputes</Link>
+                <Link href="/settings/audit-log" className="block text-sm text-accent-primary hover:underline">Audit Log</Link>
+                <Link href="/settings/notifications" className="block text-sm text-accent-primary hover:underline">Notifications</Link>
               </div>
             </div>
           </div>

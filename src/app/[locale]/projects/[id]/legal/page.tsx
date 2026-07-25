@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import { ClauseTemplates } from "../clause-templates"
 
 export default function LegalPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -75,9 +76,12 @@ export default function LegalPage({ params }: { params: Promise<{ id: string }> 
 
           <div className="card p-4">
             <h3 className="font-semibold mb-3">Clause Templates</h3>
-            <a href={`/api/contracts/${contract.id}/pdf`} target="_blank" className="btn-ghost w-full text-sm text-center block">
-              Export PDF
-            </a>
+            <ClauseTemplates contractId={contract.id} />
+            <div className="mt-3 pt-3 border-t border-border-subtle">
+              <a href={`/api/contracts/${contract.id}/pdf`} target="_blank" className="btn-ghost w-full text-sm text-center block">
+                Export PDF
+              </a>
+            </div>
           </div>
         </div>
       </div>
