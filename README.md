@@ -61,7 +61,7 @@ TrustFlow AI is a **modern freelance project management platform** that uses esc
 
 | Feature | Description |
 |---|---|
-| **AI Contract Generation** | GPT-4o generates milestone-based contracts from a plain-language project description |
+| **AI Contract Generation** | Gemini 2.0 Flash generates milestone-based contracts from a plain-language project description |
 | **Escrow Payments** | Stripe payment intents hold funds until milestone approval |
 | **Milestone Management** | Sequential work breakdown with status tracking and revision limits |
 | **AI Submission Validation** | Automated deliverable review comparing submitted work against agreed scope |
@@ -120,7 +120,7 @@ TrustFlow AI is a **modern freelance project management platform** that uses esc
 | [NextAuth.js](https://next-auth.js.org/) | 5.0-beta | Authentication |
 | [Stripe](https://stripe.com/) | 22.3 | Escrow payment processing |
 | [Razorpay](https://razorpay.com/) | 2.9 | Alternative payment provider (configured) |
-| [OpenAI](https://openai.com/) | 6.49 | AI services (GPT-4o) |
+| [Google Gemini](https://ai.google.dev/) | @google/generative-ai | AI services (Gemini 2.0 Flash) |
 | [Resend](https://resend.com/) | 6.18 | Transactional email |
 | [Supabase](https://supabase.com/) | 2.110 | File storage |
 | [BullMQ](https://docs.bullmq.io/) | 5.81 | Background job queues |
@@ -154,7 +154,7 @@ graph TB
 
     subgraph "Services Layer"
         AUTH[NextAuth.js<br/>Google OAuth + Magic Link]
-        AI[AI Services<br/>GPT-4o]
+        AI[AI Services<br/>Gemini 2.0 Flash]
         PAY[Payment<br/>Stripe / Razorpay]
         EMAIL[Email<br/>Resend]
         STORE[File Storage<br/>Supabase]
@@ -211,7 +211,7 @@ User Action → Browser → next-intl Middleware (locale routing)
                                                   ↓
                                           Business Logic / Service
                                                   ↓
-                                          Prisma / OpenAI / Stripe / Resend
+                                          Prisma / Gemini / Stripe / Resend
                                                   ↓
                                           JSON Response → Client Side Re-render
 ```
@@ -312,7 +312,7 @@ trustflow-ai/
 │   │   ├── auth.ts               # NextAuth configuration
 │   │   ├── auth-types.ts         # Session type augmentation
 │   │   ├── notifications.ts      # In-app + email notification orchestration
-│   │   ├── openai.ts             # OpenAI client singleton
+│   │   ├── gemini.ts             # Gemini client singleton
 │   │   ├── prisma.ts             # Prisma client singleton
 │   │   ├── push-notifications.ts # Web Push API
 │   │   ├── queue.ts              # BullMQ queue definitions
@@ -345,7 +345,7 @@ trustflow-ai/
 - **npm** (or pnpm/yarn)
 - **PostgreSQL** 16 (local or Docker)
 - **Redis** 7 (local or Docker)
-- **OpenAI API key** (for AI features)
+- **Gemini API key** (for AI features)
 - **Stripe account** (for escrow payments)
 - **Supabase account** (for file storage)
 - **Resend API key** (for email)
@@ -389,7 +389,7 @@ npx prisma db seed
 | `SUPABASE_URL` | For file uploads | Supabase project URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | For file uploads | Supabase service role key |
 | `SUPABASE_STORAGE_BUCKET` | For file uploads | Storage bucket name (default: `trustflow-evidence`) |
-| `OPENAI_API_KEY` | For AI | OpenAI API key |
+| `GEMINI_API_KEY` | For AI | Google Gemini API key |
 | `REDIS_URL` | For queues | Redis connection string |
 | `NEXT_PUBLIC_APP_URL` | Yes | Public app URL (default: `http://localhost:3000`) |
 
@@ -773,7 +773,7 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 - [Prisma](https://www.prisma.io/) — Database ORM
 - [Auth.js / NextAuth.js](https://authjs.dev/) — Authentication
 - [Stripe](https://stripe.com/) — Payment processing
-- [OpenAI](https://openai.com/) — AI services
+- [Google Gemini](https://ai.google.dev/) — AI services
 - [Tailwind CSS](https://tailwindcss.com/) — Styling
 - [BullMQ](https://docs.bullmq.io/) — Background job queues
 - [Supabase](https://supabase.com/) — File storage

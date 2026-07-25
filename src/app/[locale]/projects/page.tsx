@@ -2,8 +2,22 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
+import { ProjectFilters } from "./project-filters"
+import { ExportButton } from "./export-button"
+import { Pagination } from "./pagination"
 
-export default async function ProjectsPage() {
+interface PageProps {
+  searchParams: Promise<{ q?: string; status?: string; health?: string; sort?: string; page?: string }>
+}
+
+export default async function ProjectsPage({ searchParams }: PageProps) {
+  const sp = await searchParams
+  const query = sp.q?.toLowerCase()?.trim() || ""
+  const statusFilter = sp.status || ""
+  const healthFilter = sp.health || ""
+  const sortBy = sp.sort || "latest"
+  const currentPage = Math.max(1, parseInt(sp.page || "1", 10) || 1)
+  const PER_PAGE = 10
   const session = await auth()
   if (!session?.user?.id) redirect("/auth/signin")
 
@@ -33,12 +47,113 @@ export default async function ProjectsPage() {
 
   if (!user) redirect("/auth/signin")
 
-  const allProjects = [...user.projectsAsClient, ...user.projectsAsFreelancer]
+  let allProjects = [...user.projectsAsClient, ...user.projectsAsFreelancer]
+
+  // ── Search filter ──
+  if (query) {
+    allProjects = allProjects.filter(
+      (p) =>
+        p.title.toLowerCase().includes(query) ||
+        p.freelancer?.name?.toLowerCase()?.includes(query) ||
+        p.client?.name?.toLowerCase()?.includes(query) ||
+        p.description?.toLowerCase()?.includes(query)
+    )
+  }
+
+  // ── Status filter ──
+  if (statusFilter) {
+    allProjects = allProjects.filter((p) => p.status === statusFilter)
+  }
+
+  // ── Health filter ──
+  if (healthFilter === "healthy") {
+    allProjects = allProjects.filter((p) => p.riskSignals.length === 0)
+  } else if (healthFilter === "at_risk") {
+    allProjects = allProjects.filter((p) => p.riskSignals.length > 0)
+  }
+
+  // ── Sort ──
+  allProjects.sort((a, b) => {
+    switch (sortBy) {
+      case "oldest":
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      case "budget_high":
+        return b.totalAmount - a.totalAmount
+      case "budget_low":
+        return a.totalAmount - b.totalAmount
+      case "name":
+        return a.title.localeCompare(b.title)
+      case "latest":
+      default:
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    }
+  })
+
+  // ── Pagination ──
+  const totalFiltered = allProjects.length
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / PER_PAGE))
+  const safePage = Math.min(currentPage, totalPages)
+  const paginatedProjects = allProjects.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE)
+
   const activeProjects = allProjects.filter((p) => p.status === "IN_PROGRESS" || p.status === "AWAITING_FUNDING" || p.status === "AWAITING_ACCEPTANCE")
   const completedProjects = allProjects.filter((p) => p.status === "COMPLETED")
-  
+
   const escrowProtected = activeProjects.reduce((sum, p) => sum + p.totalAmount, 0)
   const atRiskCount = activeProjects.filter(p => p.riskSignals.length > 0).length
+
+  // ── Month-over-month trends ──
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+  const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
+
+  function computeTrend<T extends { createdAt: Date }>(items: T[]): { diff: number; direction: "up" | "down" | "flat"; color: string } {
+    const thisPeriod = items.filter(i => new Date(i.createdAt) >= thirtyDaysAgo).length
+    const lastPeriod = items.filter(i => {
+      const d = new Date(i.createdAt)
+      return d >= sixtyDaysAgo && d < thirtyDaysAgo
+    }).length
+    const diff = thisPeriod - lastPeriod
+    const direction = diff > 0 ? "up" : diff < 0 ? "down" : "flat"
+    const color = direction === "up" ? "text-[#10B981]" : direction === "down" ? "text-red-500" : "text-[#64748B]"
+    return { diff, direction, color }
+  }
+
+  const totalTrend = computeTrend(allProjects)
+  const activeTrend = computeTrend(activeProjects)
+  const completedTrend = computeTrend(completedProjects)
+
+  function TrendIndicator({ trend }: { trend: { diff: number; direction: string; color: string } }) {
+    const arrow = trend.direction === "up" ? "↑" : trend.direction === "down" ? "↓" : "→"
+    const label = trend.direction === "up" ? "more than last month" : trend.direction === "down" ? "less than last month" : "same as last month"
+    return (
+      <div className={`text-[11px] font-bold ${trend.color}`}>
+        {arrow} {Math.abs(trend.diff)} <span className="text-[#64748B] font-normal">{label}</span>
+      </div>
+    )
+  }
+
+  // Build export data — use the full filtered list, not just the current page
+  const exportData = allProjects.map((p) => {
+    const isHealthy = p.riskSignals.length === 0
+    const currentMilestone = p.milestones.find(m => m.status !== 'PAID') || p.milestones[p.milestones.length - 1]
+    const completedCount = p.milestones.filter(m => m.status === 'PAID').length
+    const totalCount = p.milestones.length || 1
+    const progressPct = Math.round((completedCount / totalCount) * 100)
+    return {
+      title: p.title,
+      status: p.status.replace(/_/g, " "),
+      health: isHealthy ? "Healthy" : "At Risk",
+      freelancerName: p.freelancer?.name || "Unassigned",
+      currentMilestone: currentMilestone?.title || "Completed",
+      progressPct,
+      completedMilestones: completedCount,
+      totalMilestones: totalCount,
+      budget: p.totalAmount,
+      escrowStatus: p.status === "IN_PROGRESS" || p.status === "COMPLETED" ? "Funded" : "Pending",
+      dueDate: currentMilestone?.dueDate
+        ? new Date(currentMilestone.dueDate).toLocaleDateString("en-GB")
+        : "N/A",
+    }
+  })
 
   return (
     <div className="flex h-screen bg-[#F8FAFC] text-[#0F172A] font-sans">
@@ -130,10 +245,7 @@ export default async function ProjectsPage() {
                 <p className="text-sm text-[#64748B]">Manage all your projects, track progress, and ensure smooth delivery.</p>
               </div>
               <div className="flex items-center gap-3">
-                <button className="px-4 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-sm font-semibold shadow-sm transition-colors flex items-center gap-2">
-                  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                  Export
-                </button>
+                <ExportButton projects={exportData} />
                 <Link href="/projects/new" className="bg-[#4F46E5] hover:bg-[#4338CA] text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-colors flex items-center gap-2">
                   + New Project
                   <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg>
@@ -148,7 +260,7 @@ export default async function ProjectsPage() {
                   <div>
                     <div className="flex items-center gap-2 text-xs text-[#64748B] mb-2"><svg width="14" height="14" className="text-[#4F46E5]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>Total Projects</div>
                     <div className="text-[28px] font-bold text-[#0F172A] tracking-tight leading-none mb-2">{allProjects.length}</div>
-                    <div className="text-[11px] font-bold text-[#10B981]">↑ 2 <span className="text-[#64748B] font-normal">from last month</span></div>
+                    <TrendIndicator trend={totalTrend} />
                   </div>
                 </div>
               </div>
@@ -157,7 +269,7 @@ export default async function ProjectsPage() {
                   <div>
                     <div className="flex items-center gap-2 text-xs text-[#64748B] mb-2"><svg width="14" height="14" className="text-[#10B981]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>Active Projects</div>
                     <div className="text-[28px] font-bold text-[#0F172A] tracking-tight leading-none mb-2">{activeProjects.length}</div>
-                    <div className="text-[11px] font-bold text-[#10B981]">↑ 1 <span className="text-[#64748B] font-normal">from last month</span></div>
+                    <TrendIndicator trend={activeTrend} />
                   </div>
                 </div>
               </div>
@@ -166,7 +278,7 @@ export default async function ProjectsPage() {
                   <div>
                     <div className="flex items-center gap-2 text-xs text-[#64748B] mb-2"><svg width="14" height="14" className="text-[#3B82F6]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>Completed</div>
                     <div className="text-[28px] font-bold text-[#0F172A] tracking-tight leading-none mb-2">{completedProjects.length}</div>
-                    <div className="text-[11px] font-bold text-[#10B981]">↑ 2 <span className="text-[#64748B] font-normal">from last month</span></div>
+                    <TrendIndicator trend={completedTrend} />
                   </div>
                 </div>
               </div>
@@ -194,38 +306,8 @@ export default async function ProjectsPage() {
             <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden flex flex-col">
               
               {/* Table Toolbar */}
-              <div className="p-4 border-b border-gray-100 flex flex-wrap items-center gap-4 bg-white">
-                <div className="relative flex-1 min-w-[200px]">
-                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                  <input type="text" placeholder="Search projects by name or freelancer..." className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/20 focus:border-[#4F46E5] transition-all" />
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-gray-500 mb-0.5 ml-1">Status</span>
-                    <select className="border border-gray-200 rounded-lg text-[13px] py-1.5 pl-3 pr-8 focus:outline-none bg-white font-medium text-[#0F172A] appearance-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")', backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em' }}>
-                      <option>All</option>
-                    </select>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-gray-500 mb-0.5 ml-1">Health</span>
-                    <select className="border border-gray-200 rounded-lg text-[13px] py-1.5 pl-3 pr-8 focus:outline-none bg-white font-medium text-[#0F172A] appearance-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")', backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em' }}>
-                      <option>All</option>
-                    </select>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-gray-500 mb-0.5 ml-1">Sort by</span>
-                    <select className="border border-gray-200 rounded-lg text-[13px] py-1.5 pl-3 pr-8 focus:outline-none bg-white font-medium text-[#0F172A] appearance-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")', backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em' }}>
-                      <option>Latest</option>
-                    </select>
-                  </div>
-                  <div className="h-full flex items-end">
-                    <button className="px-4 py-2 border border-gray-200 rounded-lg text-[13px] font-medium text-[#0F172A] hover:bg-gray-50 flex items-center gap-2 transition-colors h-[34px]">
-                      <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
-                      Filters
-                    </button>
-                  </div>
-                </div>
+              <div className="p-4 border-b border-gray-100 bg-white">
+                <ProjectFilters totalProjects={totalFiltered} />
               </div>
 
               {/* Table Header */}
@@ -241,12 +323,12 @@ export default async function ProjectsPage() {
 
               {/* Table Body */}
               <div className="divide-y divide-gray-100 bg-white">
-                {allProjects.map((project) => {
+                {paginatedProjects.map((project) => {
                   const isHealthy = project.riskSignals.length === 0
                   
                   let currentMilestone = project.milestones.find(m => m.status !== 'PAID')
                   if (!currentMilestone) {
-                    currentMilestone = project.milestones[project.milestones.length - 1] // if all completed, take last
+                    currentMilestone = project.milestones[project.milestones.length - 1]
                   }
                   
                   const completedMilestones = project.milestones.filter(m => m.status === 'PAID').length
@@ -254,6 +336,7 @@ export default async function ProjectsPage() {
                   const progressPct = Math.round((completedMilestones / totalMilestones) * 100)
 
                   const avatarChar = project.title.charAt(0)
+                  const isClient = project.clientId === user.id
                   
                   const getStatusBadge = (status: string) => {
                     if (status === 'IN_PROGRESS' || status === 'AWAITING_FUNDING') return <span className="bg-[#EEF2FF] text-[#4F46E5] px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0">Active</span>
@@ -283,6 +366,24 @@ export default async function ProjectsPage() {
                        dueText = `Due in ${diffDays} days`
                        dueColor = "text-[#F59E0B]"
                     }
+                  }
+
+                  // ── Dynamic Next Action ──
+                  let nextAction = ""
+                  if (project.status === "DRAFT") {
+                    nextAction = isClient ? "Send to freelancer" : "Awaiting client"
+                  } else if (project.status === "AWAITING_ACCEPTANCE") {
+                    nextAction = isClient ? "Waiting for acceptance" : "Accept the project"
+                  } else if (project.status === "AWAITING_FUNDING") {
+                    nextAction = isClient ? "Fund escrow" : "Waiting for funding"
+                  } else if (project.status === "IN_PROGRESS") {
+                    nextAction = isClient ? "Review work" : (currentMilestone?.status === "SUBMITTED" || currentMilestone?.status === "IN_REVIEW" ? "Waiting for review" : "Submit work")
+                  } else if (project.status === "COMPLETED") {
+                    nextAction = "Completed"
+                  } else if (project.status === "DISPUTED") {
+                    nextAction = "Resolve dispute"
+                  } else if (project.status === "CANCELLED") {
+                    nextAction = "Closed"
                   }
 
                   return (
@@ -358,9 +459,9 @@ export default async function ProjectsPage() {
 
                       {/* Next Action */}
                       <div className="w-[8%] flex flex-col items-end justify-center shrink-0 ml-auto">
-                        <div className="text-[9px] font-semibold text-[#4F46E5] mb-1 uppercase tracking-wider whitespace-nowrap">Review submission</div>
+                        <div className="text-[9px] font-semibold text-[#4F46E5] mb-1 uppercase tracking-wider whitespace-nowrap">{nextAction}</div>
                         <div className="flex items-center gap-2">
-                          <Link href={`/projects/${project.id}`} className="px-3 py-1.5 bg-white border border-gray-200 hover:border-[#4F46E5] hover:text-[#4F46E5] text-[#0F172A] rounded-lg text-[11px] font-bold transition-colors whitespace-nowrap shadow-sm">Review Now</Link>
+                          <Link href={`/projects/${project.id}`} className="px-3 py-1.5 bg-white border border-gray-200 hover:border-[#4F46E5] hover:text-[#4F46E5] text-[#0F172A] rounded-lg text-[11px] font-bold transition-colors whitespace-nowrap shadow-sm">View Details</Link>
                           <button className="text-gray-400 hover:text-[#0F172A]"><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></button>
                         </div>
                       </div>
@@ -368,20 +469,11 @@ export default async function ProjectsPage() {
                     </div>
                   )
                 })}
-                {allProjects.length === 0 && <div className="p-8 text-center text-sm text-gray-500">No projects found.</div>}
+                {paginatedProjects.length === 0 && <div className="p-8 text-center text-sm text-gray-500">No projects found.</div>}
               </div>
 
               {/* Table Footer */}
-              <div className="bg-white border-t border-gray-100 px-6 py-4 flex items-center justify-between text-[13px] text-[#64748B]">
-                <div>Showing 1 to {allProjects.length} of {allProjects.length} projects</div>
-                <div className="flex items-center gap-1">
-                  <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-400 disabled:opacity-50" disabled><svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg></button>
-                  <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-[#4F46E5] bg-[#EEF2FF] text-[#4F46E5] font-bold">1</button>
-                  <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 font-medium text-[#0F172A]" disabled>2</button>
-                  <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 font-medium text-[#0F172A]" disabled>3</button>
-                  <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-600" disabled><svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
-                </div>
-              </div>
+              <Pagination currentPage={safePage} totalPages={totalPages} totalItems={totalFiltered} />
 
             </div>
           </div>

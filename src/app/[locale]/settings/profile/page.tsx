@@ -12,6 +12,8 @@ interface FreelancerProfile {
   hourlyRate: number | null
   availability: string | null
   portfolio: Record<string, unknown> | null
+  country: string | null
+  city: string | null
 }
 
 export default function ProfileEditPage() {
@@ -28,6 +30,8 @@ export default function ProfileEditPage() {
   const [skills, setSkills] = useState<string[]>([])
   const [hourlyRate, setHourlyRate] = useState("")
   const [availability, setAvailability] = useState("")
+  const [country, setCountry] = useState("")
+  const [city, setCity] = useState("")
 
   useEffect(() => {
     fetch("/api/profile")
@@ -39,6 +43,8 @@ export default function ProfileEditPage() {
           setSkills(data.skills || [])
           setHourlyRate(data.hourlyRate ? (data.hourlyRate / 100).toString() : "")
           setAvailability(data.availability || "")
+          setCountry(data.country || "")
+          setCity(data.city || "")
         }
         setLoading(false)
       })
@@ -80,6 +86,8 @@ export default function ProfileEditPage() {
           skills,
           hourlyRate: hourlyRate ? parseFloat(hourlyRate) : null,
           availability,
+          country,
+          city,
         }),
       })
 
@@ -235,6 +243,33 @@ export default function ProfileEditPage() {
                   <option value="WEEKENDS">Weekends Only</option>
                   <option value="NOT_AVAILABLE">Not Available</option>
                 </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Location */}
+        <div className="card-double animate-fade-up stagger-5">
+          <div className="card-inner space-y-4">
+            <h3 className="font-semibold" style={{ fontFamily: "var(--font-poppins)" }}>Location</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-text-secondary mb-1.5 block">City</label>
+                <input
+                  className="input"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="e.g., San Francisco, Mumbai"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-text-secondary mb-1.5 block">Country</label>
+                <input
+                  className="input"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  placeholder="e.g., United States, India"
+                />
               </div>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import { openai } from "./openai"
+import { getGeminiModel } from "./gemini"
 
 export interface ValidationResult {
   matchSummary: string
@@ -13,15 +13,16 @@ export async function validateSubmission(
   fileUrls: string[],
   linkEvidence: Array<{ type: string; url: string; label: string }> | null
 ): Promise<ValidationResult> {
-  const modelVersion = "gpt-4o-2024-08"
+  const modelVersion = "gemini-2.0-flash"
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `You are a scope validation assistant for a freelance escrow platform.
+    const model = getGeminiModel({
+      temperature: 0.7,
+      maxOutputTokens: 2000,
+      responseMimeType: "application/json",
+    })
+
+    const systemPrompt = `You are a scope validation assistant for a freelance escrow platform.
 
 Your job: compare the submitted work evidence against the agreed deliverable description and determine if the scope has been met.
 
@@ -31,22 +32,20 @@ Rules:
 - If it's ambiguous, partial, or lacks sufficient evidence, set confidence to NEEDS_REVIEW
 - Write a concise plain-language match summary (2-3 sentences) explaining your reasoning
 - The match summary will be shown to the client as an advisory aid — never as an auto-approval
-- Return ONLY valid JSON with fields: matchSummary (string), confidence ("HIGH" | "NEEDS_REVIEW")`,
-        },
-        {
-          role: "user",
-          content: JSON.stringify({
-            agreedDeliverable: deliverableDescription,
-            submittedDescription: submissionDescription,
-            fileUrls,
-            linkEvidence,
-          }),
-        },
-      ],
-      response_format: { type: "json_object" },
+- Return ONLY valid JSON with fields: matchSummary (string), confidence ("HIGH" | "NEEDS_REVIEW")`
+
+    const userContent = JSON.stringify({
+      agreedDeliverable: deliverableDescription,
+      submittedDescription: submissionDescription,
+      fileUrls,
+      linkEvidence,
     })
 
-    const content = completion.choices[0]?.message?.content
+    const result = await model.generateContent([
+      { text: systemPrompt },
+      { text: userContent },
+    ])
+    const content = result.response.text()
     if (!content) throw new Error("No response from AI")
 
     const parsed = JSON.parse(content) as ValidationResult
