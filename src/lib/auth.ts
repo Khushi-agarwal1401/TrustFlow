@@ -1,4 +1,5 @@
 import NextAuth from "next-auth"
+import type { AdapterUser } from "@auth/core/adapters"
 import Google from "next-auth/providers/google"
 import Resend from "next-auth/providers/resend"
 import Credentials from "next-auth/providers/credentials"
@@ -12,34 +13,48 @@ const baseAdapter = PrismaAdapter(prisma)
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: {
     ...baseAdapter,
-    createUser: (data: any) => {
+    createUser: (data) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { image, emailVerified, ...rest } = data
-      return baseAdapter.createUser!({ ...rest, avatarUrl: image }) as any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return baseAdapter.createUser!({ ...rest, avatarUrl: image } as any)
     },
     getUser: async (id: string) => {
       const user = await baseAdapter.getUser!(id)
-      if (user) (user as any).image = (user as any).avatarUrl
+      if (user) {
+        const u = user as AdapterUser & { avatarUrl?: string | null }
+        u.image = u.avatarUrl ?? u.image
+      }
       return user
     },
     getUserByEmail: async (email: string) => {
       const user = await baseAdapter.getUserByEmail!(email)
-      if (user) (user as any).image = (user as any).avatarUrl
+      if (user) {
+        const u = user as AdapterUser & { avatarUrl?: string | null }
+        u.image = u.avatarUrl ?? u.image
+      }
       return user
     },
     getUserByAccount: async (provider_providerAccountId: { provider: string; providerAccountId: string }) => {
       const user = await baseAdapter.getUserByAccount!(provider_providerAccountId)
-      if (user) (user as any).image = (user as any).avatarUrl
+      if (user) {
+        const u = user as AdapterUser & { avatarUrl?: string | null }
+        u.image = u.avatarUrl ?? u.image
+      }
       return user
     },
-    updateUser: (data: any) => {
+    updateUser: (data) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { image, emailVerified, ...rest } = data
-      return baseAdapter.updateUser!({ ...rest, ...(image && { avatarUrl: image }) }) as any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return baseAdapter.updateUser!({ ...rest, ...(image && { avatarUrl: image }) } as any)
     },
   },
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
+      allowDangerousEmailAccountLinking: true,
     }),
     Resend({ from: process.env.AUTH_EMAIL_FROM ?? "noreply@trustflow.ai" }),
     Credentials({
@@ -83,11 +98,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   pages: { signIn: "/auth/signin" },
+  session: { strategy: "jwt" },
   callbacks: {
-    session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id
-        ;(session.user as any).image = (user as any).avatarUrl || (user as any).image
+    jwt({ token, user }) {
+      if (user) {
+        token.id = user.id
+        token.image = (user as AdapterUser & { avatarUrl?: string | null }).avatarUrl ?? user.image
+      }
+      return token
+    },
+    session({ session, token }) {
+      if (session.user && token.id) {
+        session.user.id = token.id as string
+        if (token.image) {
+          session.user.image = token.image as string
+        }
       }
       return session
     },
