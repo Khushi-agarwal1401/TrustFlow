@@ -1,8 +1,8 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
+import { EscrowStatus } from "@prisma/client"
 import Link from "next/link"
-import Image from "next/image"
 
 export default async function Dashboard() {
   const session = await auth()
@@ -12,12 +12,12 @@ export default async function Dashboard() {
     where: { id: session.user.id },
     include: {
       projectsAsClient: {
-        include: { freelancer: true, client: true, milestones: { orderBy: { sequence: 'asc' } } },
+        include: { freelancer: true, client: true, contract: { select: { id: true } }, milestones: { orderBy: { sequence: 'asc' } } },
         orderBy: { createdAt: "desc" },
         take: 20,
       },
       projectsAsFreelancer: {
-        include: { freelancer: true, client: true, milestones: { orderBy: { sequence: 'asc' } } },
+        include: { freelancer: true, client: true, contract: { select: { id: true } }, milestones: { orderBy: { sequence: 'asc' } } },
         orderBy: { createdAt: "desc" },
         take: 20,
       },
@@ -33,7 +33,7 @@ export default async function Dashboard() {
   const escrowTransactions = await prisma.escrowTransaction.findMany({
     where: {
       milestone: { project: { OR: [{ clientId: user.id }, { freelancerId: user.id }] } },
-      status: { in: ["PENDING", "SUCCEEDED"] },
+      status: { in: [EscrowStatus.PENDING, EscrowStatus.SUCCEEDED] },
     },
   })
   const escrowProtected = escrowTransactions
@@ -42,7 +42,21 @@ export default async function Dashboard() {
   const totalFunded = escrowTransactions
     .filter((t) => t.status === "SUCCEEDED")
     .reduce((sum, t) => sum + t.amount, 0)
-  
+
+  // Escrow trend (compare to last 30 days)
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+  const previousEscrowAmount = await prisma.escrowTransaction.aggregate({
+    where: {
+      milestone: { project: { OR: [{ clientId: user.id }, { freelancerId: user.id }] } },
+      createdAt: { lt: thirtyDaysAgo },
+    },
+    _sum: { amount: true },
+  })
+  const previousTotal = previousEscrowAmount._sum.amount || 0
+  const escrowChangePercent = previousTotal > 0
+    ? Math.round(((escrowProtected + totalFunded - previousTotal) / previousTotal) * 100)
+    : 100
+
   // ── AI Trust Score Computation ──
   const allMilestones = allProjects.flatMap(p => p.milestones)
   const completedMilestonesCount = allMilestones.filter(m => m.status === "APPROVED" || m.status === "PAID").length
@@ -56,7 +70,8 @@ export default async function Dashboard() {
   const avgRating = ratings.length > 0
     ? ratings.reduce((sum, r) => sum + r.score, 0) / ratings.length
     : null
-  const ratingScore = avgRating ? (avgRating / 5) * 100 : 100
+  // Default to 70 instead of 100 for new users with no ratings
+  const ratingScore = avgRating ? (avgRating / 5) * 100 : 70
   
   const totalDisputes = await prisma.dispute.count({
     where: { milestone: { project: { OR: [{ clientId: user.id }, { freelancerId: user.id }] } } },
@@ -68,13 +83,24 @@ export default async function Dashboard() {
   )
 
   // ── Current Phase ──
-  const currentProject = activeProjects[0] || null
+  const currentProject = allProjects.find((p) =>
+    ["DRAFT", "AWAITING_ACCEPTANCE", "AWAITING_FUNDING", "IN_PROGRESS", "DISPUTED"].includes(p.status)
+  ) || null
+
+  const phaseLabels: Record<string, { label: string; action: string }> = {
+    DRAFT: { label: "draft", action: "Review & send to freelancer" },
+    AWAITING_ACCEPTANCE: { label: "awaiting_acceptance", action: "Waiting for freelancer to accept" },
+    AWAITING_FUNDING: { label: "funding", action: "Fund escrow to start the project" },
+    IN_PROGRESS: { label: "in_progress", action: "Track milestone progress" },
+    DISPUTED: { label: "disputed", action: "Resolve dispute to continue" },
+  }
+
   const currentPhase = currentProject ? {
     title: currentProject.title,
     status: currentProject.status,
-    role: currentProject.clientId === user.id ? "client" : "freelancer",
-    phase: currentProject.status === "DRAFT" ? "draft" : currentProject.status === "AWAITING_FUNDING" ? "funding" : "in_progress",
-    nextAction: currentProject.status === "DRAFT" ? "Review & send to freelancer" : currentProject.status === "AWAITING_FUNDING" ? "Fund escrow to start" : "Track milestone progress",
+    role: currentProject.clientId === user.id ? ("client" as const) : ("freelancer" as const),
+    phase: phaseLabels[currentProject.status]?.label || "in_progress",
+    nextAction: phaseLabels[currentProject.status]?.action || "Track progress",
   } : null
 
   // ── Milestone Progress ──
@@ -205,7 +231,7 @@ export default async function Dashboard() {
                 </Link>
               </div>
 
-              {/* Metric Cards Row */}
+              {/* Metric Cards Row with Real Data */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
                   <div className="flex items-center gap-2.5 text-sm font-semibold text-[#0F172A] mb-4">
@@ -215,8 +241,8 @@ export default async function Dashboard() {
                   <div className="mt-auto">
                     <div className="text-[28px] font-bold text-[#0F172A] tracking-tight">₹{escrowProtected.toLocaleString()}</div>
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-[#64748B]">Across {escrowTransactions.filter(t => t.status === 'PENDING').length || activeProjects.length} escrow{escrowTransactions.filter(t => t.status === 'PENDING').length !== 1 ? 's' : ''}</span>
-                      <span className="text-xs font-bold text-[#10B981]">↑ {Math.round((totalFunded / Math.max(escrowProtected + totalFunded, 1)) * 100)}%</span>
+                      <span className="text-xs text-[#64748B]">Across {escrowTransactions.filter(t => t.status === "PENDING").length || activeProjects.length} escrow{escrowTransactions.filter(t => t.status === "PENDING").length !== 1 ? 's' : ''}</span>
+                      <span className="text-xs font-bold text-[#10B981]">↑ {escrowChangePercent}%</span>
                     </div>
                   </div>
                 </div>
@@ -229,7 +255,9 @@ export default async function Dashboard() {
                   <div className="mt-auto">
                     <div className="text-[28px] font-bold text-[#0F172A] tracking-tight">{aiTrustScore}%</div>
                     <div className="flex items-center justify-between mt-1">
-                      <span className={`text-xs font-bold ${aiTrustScore >= 80 ? 'text-[#10B981]' : aiTrustScore >= 50 ? 'text-[#F59E0B]' : 'text-[#EF4444]'}`}>{aiTrustScore >= 80 ? 'Excellent' : aiTrustScore >= 50 ? 'Needs Review' : 'Critical'}</span>
+                      <span className={`text-xs font-bold ${aiTrustScore >= 80 ? 'text-green-600' : aiTrustScore >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
+                        {aiTrustScore >= 80 ? 'Excellent' : aiTrustScore >= 50 ? 'Needs Review' : 'Critical'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -280,39 +308,46 @@ export default async function Dashboard() {
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="text-lg font-bold text-[#0F172A] tracking-tight">AI Project Health</h3>
                     {isHealthy ? (
-                      <span className="bg-[#10B981]/10 text-[#10B981] px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-[#10B981]"></div>Healthy</span>
+                      <span className="bg-green-50 text-green-600 px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-green-600"></div>Healthy</span>
                     ) : (
-                      <span className="bg-[#F59E0B]/10 text-[#F59E0B] px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-[#F59E0B]"></div>Risks Detected</span>
+                      <span className="bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-amber-600"></div>Risks Detected</span>
                     )}
                   </div>
                   <p className="text-sm text-[#64748B] mb-6">{isHealthy ? "Everything looks good. No risk signals detected." : "AI has detected potential risks in your active projects."}</p>
                   <div className="flex flex-wrap gap-8">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-6 h-6 rounded-full bg-[#10B981]/10 text-[#10B981] flex items-center justify-center"><svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
+                      <div className="w-6 h-6 rounded-full bg-green-50 text-green-600 flex items-center justify-center"><svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
                       <div>
                         <div className="text-[13px] font-semibold text-[#0F172A]">Contract</div>
-                        <div className="text-[11px] text-[#64748B]">Accepted</div>
+<div className="text-[11px] text-[#64748B]">{allProjects.some(p => p.contract !== null) ? 'Accepted' : 'Pending'}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2.5">
-                      <div className="w-6 h-6 rounded-full bg-[#10B981]/10 text-[#10B981] flex items-center justify-center"><svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
+                      <div className={`w-6 h-6 rounded-full ${totalFunded > 0 ? 'bg-green-50 text-green-600' : 'bg-gray-50 text-gray-400'} flex items-center justify-center`}><svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
                       <div>
                         <div className="text-[13px] font-semibold text-[#0F172A]">Escrow</div>
-                        <div className="text-[11px] text-[#64748B]">Funded</div>
+                        <div className="text-[11px] text-[#64748B]">{totalFunded > 0 ? 'Funded' : 'Pending'}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2.5">
-                      <div className="w-6 h-6 rounded-full bg-[#EEF2FF] text-[#4F46E5] flex items-center justify-center"><svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div>
+                      <div className={`w-6 h-6 rounded-full ${pendingMilestones > 0 ? 'bg-[#EEF2FF] text-[#4F46E5]' : 'bg-green-50 text-green-600'} flex items-center justify-center`}>
+                        {pendingMilestones > 0
+                          ? <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                          : <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+                        }
+                      </div>
                       <div>
-                        <div className="text-[13px] font-semibold text-[#0F172A]">Milestone 1</div>
-                        <div className="text-[11px] text-[#64748B]">Due in 4 days</div>
+                        <div className="text-[13px] font-semibold text-[#0F172A]">Next Milestone</div>
+                        <div className="text-[11px] text-[#64748B]">{pendingMilestones > 0 ? `${pendingMilestones} pending` : 'All completed'}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2.5">
-                      <div className="w-6 h-6 rounded-full bg-[#10B981]/10 text-[#10B981] flex items-center justify-center"><svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></div>
+                      <div className={`w-6 h-6 rounded-full ${riskSignals.length > 0 ? 'bg-amber-50 text-amber-600' : 'bg-green-50 text-green-600'} flex items-center justify-center`}>
+                        <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                      </div>
                       <div>
                         <div className="text-[13px] font-semibold text-[#0F172A]">Risk Signals</div>
-                        <div className="text-[11px] text-[#64748B]">{riskSignals.length}</div>
+                        <div className="text-[11px] text-[#64748B]">{riskSignals.length} detected</div>
                       </div>
                     </div>
                   </div>
@@ -349,24 +384,38 @@ export default async function Dashboard() {
                       {/* Timeline Graphic */}
                       <div className="py-6 px-2 mb-4 relative">
                         <div className="absolute top-1/2 left-0 w-full h-[2px] bg-gray-100 -translate-y-1/2 z-0"></div>
-                        <div className="absolute top-1/2 left-0 h-[2px] bg-[#10B981] -translate-y-1/2 z-0" style={{ width: '40%' }}></div>
+                        <div className="absolute top-1/2 left-0 h-[2px] bg-green-500 -translate-y-1/2 z-0" style={{ width: `${project.milestones.filter(m => m.status === 'APPROVED' || m.status === 'PAID').length / Math.max(project.milestones.length, 1) * 100}%` }}></div>
                         <div className="relative z-10 flex justify-between items-center w-full">
                           <div className="flex flex-col items-center gap-1.5">
-                            <div className="w-5 h-5 rounded-full bg-[#10B981] text-white flex items-center justify-center"><svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
+                            <div className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center"><svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
                             <span className="text-[10px] font-semibold text-[#0F172A]">Contract</span>
                           </div>
                           <div className="flex flex-col items-center gap-1.5">
-                            <div className="w-5 h-5 rounded-full bg-[#10B981] text-white flex items-center justify-center"><svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
+                            <div className={`w-5 h-5 rounded-full ${project.status === 'AWAITING_FUNDING' ? 'bg-white border-2 border-[#4F46E5]' : 'bg-green-500 text-white'} flex items-center justify-center`}>
+                              {project.status !== 'AWAITING_FUNDING' ? <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg> : <div className="w-1.5 h-1.5 rounded-full bg-[#4F46E5]"></div>}
+                            </div>
                             <span className="text-[10px] font-semibold text-[#0F172A]">Escrow</span>
                           </div>
-                          {project.milestones.map((m, i) => (
-                            <div key={m.id} className="flex flex-col items-center gap-1.5">
-                              <div className={`w-5 h-5 rounded-full border-2 ${m.status === 'COMPLETED' ? 'bg-[#10B981] border-[#10B981] text-white' : m.status === 'IN_PROGRESS' || m.status === 'PENDING' ? 'bg-white border-[#4F46E5]' : 'bg-white border-gray-200'} flex items-center justify-center`}>
-                                {m.status === 'COMPLETED' ? <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg> : <div className={`w-1.5 h-1.5 rounded-full ${m.status === 'IN_PROGRESS' || m.status === 'PENDING' ? 'bg-[#4F46E5]' : 'bg-gray-200'}`}></div>}
+                          {project.milestones.map((m, i) => {
+                            const isComplete = m.status === "APPROVED" || m.status === "PAID"
+                            const isActive = m.status === "SUBMITTED" || m.status === "IN_REVIEW"
+                            return (
+                              <div key={m.id} className="flex flex-col items-center gap-1.5">
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                  isComplete ? 'bg-green-500 border-green-500 text-white' : 
+                                  isActive ? 'bg-white border-[#4F46E5]' : 
+                                  m.status === "DISPUTED" ? 'bg-red-50 border-red-300' :
+                                  'bg-white border-gray-200'
+                                }`}>
+                                  {isComplete ? <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg> : 
+                                   m.status === "DISPUTED" ? <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg> :
+                                   isActive ? <div className="w-1.5 h-1.5 rounded-full bg-[#4F46E5]"></div> :
+                                   <div className="w-1.5 h-1.5 rounded-full bg-gray-200"></div>}
+                                </div>
+                                <span className="text-[10px] font-semibold text-[#0F172A]">MS {i + 1}</span>
                               </div>
-                              <span className="text-[10px] font-semibold text-[#0F172A]">Milestone {i + 1}</span>
-                            </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       </div>
 
@@ -375,19 +424,25 @@ export default async function Dashboard() {
                         <div>
                           <p className="text-[10px] text-[#64748B] mb-1">Freelancer</p>
                           <div className="flex items-center gap-1.5">
-                            <div className="w-5 h-5 rounded-full bg-gray-200 overflow-hidden"><img src={project.freelancer?.avatarUrl || ''} className="w-full h-full object-cover" /></div>
-                            <span className="text-xs font-semibold text-[#0F172A]">{project.freelancer?.name}</span>
+                            <div className="w-5 h-5 rounded-full bg-gray-200 overflow-hidden">
+                              {project.freelancer?.avatarUrl ? <img src={project.freelancer.avatarUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gray-300"></div>}
+                            </div>
+                            <span className="text-xs font-semibold text-[#0F172A]">{project.freelancer?.name || "Not assigned"}</span>
                           </div>
                         </div>
                         <div>
-                          <p className="text-[10px] text-[#64748B] mb-1">Due Date</p>
-                          <p className="text-xs font-semibold text-[#0F172A]">{project.milestones[0]?.dueDate ? new Date(project.milestones[0].dueDate).toLocaleDateString() : 'N/A'}</p>
+                          <p className="text-[10px] text-[#64748B] mb-1">Next Due</p>
+                          <p className="text-xs font-semibold text-[#0F172A]">
+                            {project.milestones.find(m => m.status === "PENDING")?.dueDate 
+                              ? new Date(project.milestones.find(m => m.status === "PENDING")!.dueDate!).toLocaleDateString() 
+                              : "N/A"}
+                          </p>
                         </div>
                         <div>
-                          <p className="text-[10px] text-[#64748B] mb-1">AI Match Score</p>
+                          <p className="text-[10px] text-[#64748B] mb-1">AI Match</p>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-[#0F172A]">91%</span>
-                            <div className="w-16 h-1 bg-gray-100 rounded-full overflow-hidden"><div className="w-[91%] h-full bg-[#10B981]"></div></div>
+                            <span className="text-xs font-semibold text-[#0F172A]">{aiTrustScore}%</span>
+                            <div className="w-16 h-1 bg-gray-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${aiTrustScore >= 80 ? 'bg-green-500' : aiTrustScore >= 50 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${aiTrustScore}%` }}></div></div>
                           </div>
                         </div>
                         <div className="flex flex-col items-end justify-center">
@@ -417,9 +472,9 @@ export default async function Dashboard() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <h4 className="text-xs font-bold text-[#0F172A] truncate">{notif.type}</h4>
-                          <span className="text-[10px] text-[#64748B] shrink-0">10m ago</span>
+                          <span className="text-[10px] text-[#64748B] shrink-0">{Math.round((Date.now() - new Date(notif.createdAt).getTime()) / 3600000)}h ago</span>
                         </div>
-                        <p className="text-[11px] text-[#64748B] mt-0.5 truncate">{JSON.stringify(notif.payload)}</p>
+                        <p className="text-[11px] text-[#64748B] mt-0.5 truncate">{(notif.payload as Record<string, unknown> | null)?.message as string || notif.type}</p>
                       </div>
                     </div>
                   ))}
@@ -446,12 +501,12 @@ export default async function Dashboard() {
                         </div>
                         <div className="text-right">
                           <div className="text-[10px] text-[#64748B] mb-0.5">Due in</div>
-                          <div className="text-xs font-bold text-[#F59E0B]">4 days</div>
+                          <div className="text-xs font-bold text-[#F59E0B]">{m.dueDate ? Math.max(1, Math.round((new Date(m.dueDate).getTime() - Date.now()) / 86400000)) : '—'} days</div>
                         </div>
                       </div>
                       <div className="flex items-center justify-between text-[11px]">
                         <span className="font-semibold text-[#0F172A]">₹{m.amount.toLocaleString()} <span className="text-[#64748B] font-normal">of ₹{m.project.totalAmount.toLocaleString()}</span></span>
-                        <span className="text-[#64748B]">25%</span>
+                        <span className="text-[#64748B]">{Math.round((m.amount / m.project.totalAmount) * 100)}%</span>
                       </div>
                       <div className="w-full h-1 bg-gray-100 rounded-full mt-1.5 overflow-hidden"><div className="w-1/4 h-full bg-[#4F46E5]"></div></div>
                     </div>
@@ -473,7 +528,7 @@ export default async function Dashboard() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <h4 className="text-xs font-bold text-[#0F172A] truncate">{evt.eventType.replace(/_/g, ' ')}</h4>
-                          <span className="text-[10px] text-[#64748B] shrink-0">1h ago</span>
+                          <span className="text-[10px] text-[#64748B] shrink-0">{Math.round((Date.now() - new Date(evt.createdAt).getTime()) / 3600000)}h ago</span>
                         </div>
                         <p className="text-[11px] text-[#64748B] mt-0.5 truncate">{evt.project.title}</p>
                       </div>

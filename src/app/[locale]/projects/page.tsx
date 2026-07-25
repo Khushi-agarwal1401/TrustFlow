@@ -244,12 +244,12 @@ export default async function ProjectsPage() {
                 {allProjects.map((project) => {
                   const isHealthy = project.riskSignals.length === 0
                   
-                  let currentMilestone = project.milestones.find(m => m.status !== 'COMPLETED')
+                  let currentMilestone = project.milestones.find(m => m.status !== 'PAID')
                   if (!currentMilestone) {
                     currentMilestone = project.milestones[project.milestones.length - 1] // if all completed, take last
                   }
                   
-                  const completedMilestones = project.milestones.filter(m => m.status === 'COMPLETED').length
+                  const completedMilestones = project.milestones.filter(m => m.status === 'PAID').length
                   const totalMilestones = project.milestones.length || 1
                   const progressPct = Math.round((completedMilestones / totalMilestones) * 100)
 
@@ -263,7 +263,7 @@ export default async function ProjectsPage() {
 
                   let milestoneStatusText = "In Progress"
                   let milestoneStatusColor = "text-[#4F46E5]"
-                  if (currentMilestone?.status === "COMPLETED") {
+                  if (currentMilestone?.status === "PAID") {
                     milestoneStatusText = "Completed"
                     milestoneStatusColor = "text-[#10B981]"
                   }
@@ -273,7 +273,7 @@ export default async function ProjectsPage() {
                   let dueColor = ""
                   if (dueDate) {
                     const diffDays = Math.ceil((dueDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24))
-                    if (currentMilestone?.status === "COMPLETED") {
+                    if (currentMilestone?.status === "PAID") {
                        dueText = "Completed"
                        dueColor = "text-[#64748B]"
                     } else if (diffDays < 0) {
