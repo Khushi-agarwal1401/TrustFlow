@@ -1,0 +1,47 @@
+{
+  "common": {
+    "dashboard": "Panel",
+    "projects": "Proyectos",
+    "settings": "Configuración",
+    "signOut": "Cerrar sesión",
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "create": "Crear",
+    "search": "Buscar",
+    "noData": "Sin datos"
+  },
+  "project": {
+    "new": "Nuevo Proyecto",
+    "title": "Título del Proyecto",
+    "description": "Descripción",
+    "budget": "Presupuesto",
+    "status": "Estado",
+    "milestones": "Hitos",
+    "contract": "Contrato",
+    "proposals": "Propuestas",
+    "messages": "Mensajes",
+    "legal": "Legal"
+  },
+  "marketplace": {
+    "title": "Mercado",
+    "browse": "Explorar Proyectos",
+    "submitProposal": "Enviar Propuesta",
+    "bidAmount": "Monto de Oferta",
+    "coverLetter": "Carta de Presentación"
+  },
+  "analytics": {
+    "title": "Analíticas",
+    "totalRevenue": "Ingresos Totales",
+    "completionRate": "Tasa de Finalización",
+    "avgProjectValue": "Valor Promedio",
+    "monthlyRevenue": "Ingresos Mensuales"
+  },
+  "error": {
+    "notFound": "No encontrado",
+    "forbidden": "Acceso denegado",
+    "unauthorized": "Inicia sesión",
+    "generic": "Algo salió mal"
+  }
+}
