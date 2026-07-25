@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { IntegrationDeliveries } from "../integration-deliveries"
 
 interface Webhook {
   id: string
@@ -91,21 +92,26 @@ export default function IntegrationsPage() {
         ) : (
           integrations.map((i, idx) => (
             <div key={i.id} className={`card-double animate-fade-up stagger-${Math.min(idx + 1, 6)}`}>
-              <div className="card-inner flex items-center justify-between">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className={`w-8 h-8 rounded-lg ${providerColors[i.provider] || "bg-bg-elevated"} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
-                    {i.provider.charAt(0)}
+              <div className="card-inner">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className={`w-8 h-8 rounded-lg ${providerColors[i.provider] || "bg-bg-elevated"} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                      {i.provider.charAt(0)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm">{i.name} <span className="text-xs text-text-muted uppercase">{i.provider}</span></p>
+                      <p className="text-xs text-text-muted mt-0.5">{i.project.title} · {i.events.join(", ")} · {i._count.deliveries} deliveries</p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="font-medium text-sm">{i.name} <span className="text-xs text-text-muted uppercase">{i.provider}</span></p>
-                    <p className="text-xs text-text-muted mt-0.5">{i.project.title} · {i.events.join(", ")} · {i._count.deliveries} deliveries</p>
+                  <div className="flex items-center gap-3 ml-3 shrink-0">
+                    <div className={`w-2 h-2 rounded-full ${i.isActive ? "bg-success" : "bg-text-muted"}`} />
+                    {i.lastTriggeredAt && (
+                      <span className="text-xs text-text-muted">{new Date(i.lastTriggeredAt).toLocaleDateString()}</span>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center gap-3 ml-3 shrink-0">
-                  <div className={`w-2 h-2 rounded-full ${i.isActive ? "bg-success" : "bg-text-muted"}`} />
-                  {i.lastTriggeredAt && (
-                    <span className="text-xs text-text-muted">{new Date(i.lastTriggeredAt).toLocaleDateString()}</span>
-                  )}
+                <div className="mt-2 pt-2 border-t border-border-subtle">
+                  <IntegrationDeliveries integrationId={i.id} />
                 </div>
               </div>
             </div>

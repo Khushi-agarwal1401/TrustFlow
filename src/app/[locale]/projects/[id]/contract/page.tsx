@@ -3,6 +3,8 @@
 import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { useSession } from "next-auth/react"
+import { AISplitMilestones } from "../ai-split-milestones-modal"
 
 interface Milestone {
   id?: string
@@ -15,7 +17,9 @@ interface Milestone {
 
 export default function ContractPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
+  const { data: session } = useSession()
   const router = useRouter()
+  const [projectData, setProjectData] = useState<{ clientId?: string } | null>(null)
   const [milestones, setMilestones] = useState<Milestone[]>([])
   const [terms, setTerms] = useState("")
   const [budget, setBudget] = useState(0)
@@ -26,6 +30,7 @@ export default function ContractPage({ params }: { params: Promise<{ id: string 
     fetch(`/api/projects/${id}`)
       .then((r) => r.json())
       .then((data) => {
+        setProjectData(data)
         if (data.totalAmount) setBudget(data.totalAmount / 100)
         if (data.milestones) {
           setMilestones(data.milestones.map((m: Milestone) => ({ ...m, amount: m.amount / 100 })))
@@ -83,7 +88,16 @@ export default function ContractPage({ params }: { params: Promise<{ id: string 
           <div className="space-y-5">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold" style={{ fontFamily: "var(--font-poppins)" }}>Milestones</h2>
-              <button onClick={addMilestone} className="btn-ghost text-sm">+ Add Milestone</button>
+              <div className="flex items-center gap-2">
+                {projectData && (
+                  <AISplitMilestones
+                    projectId={id}
+                    isClient={session?.user?.id === projectData.clientId}
+                    existingCount={milestones.length}
+                  />
+                )}
+                <button onClick={addMilestone} className="btn-ghost text-sm">+ Add Milestone</button>
+              </div>
             </div>
 
             {milestones.length === 0 ? (
