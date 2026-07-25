@@ -5,6 +5,8 @@ import Link from "next/link"
 import { ProjectFilters } from "./project-filters"
 import { ExportButton } from "./export-button"
 import { Pagination } from "./pagination"
+import { AppLayout } from "@/components/layout/app-layout"
+import { Card } from "@/components/ui/card"
 
 interface PageProps {
   searchParams: Promise<{ q?: string; status?: string; health?: string; sort?: string; page?: string }>
@@ -156,86 +158,9 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
   })
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] text-[#0F172A] font-sans">
-      {/* LEFT SIDEBAR (Copied from Dashboard) */}
-      <aside className="w-[260px] bg-white border-r border-gray-200 flex flex-col justify-between hidden lg:flex shrink-0 h-screen overflow-y-auto">
-        <div>
-          <div className="h-[72px] flex items-center px-6 border-b border-transparent">
-            <div className="flex items-center gap-2.5 text-[#4F46E5]">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-              <span className="font-bold text-xl tracking-tight text-[#0F172A]">TrustFlow</span>
-            </div>
-          </div>
-          <nav className="px-4 py-6 flex flex-col gap-1">
-            <Link href="/" className="flex items-center gap-3 px-3 py-2.5 text-[#64748B] hover:text-[#0F172A] hover:bg-gray-50 font-medium rounded-lg transition-colors">
-              <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/></svg>
-              Dashboard
-            </Link>
-            <Link href="/projects" className="flex items-center gap-3 px-3 py-2.5 bg-[#EEF2FF] text-[#4F46E5] font-medium rounded-lg">
-              <div className="w-[18px] h-[18px] bg-gray-300 rounded-sm opacity-50 hidden"></div>
-              <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-              Projects
-            </Link>
-            {['Contracts', 'Milestones', 'Escrow & Payments', 'Disputes', 'Messages', 'Analytics', 'Freelancers', 'Settings'].map(item => (
-              <Link key={item} href={`/${item.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-')}`} className="flex items-center gap-3 px-3 py-2.5 text-[#64748B] hover:text-[#0F172A] hover:bg-gray-50 font-medium rounded-lg transition-colors">
-                <div className="w-[18px] h-[18px] bg-gray-300 rounded-sm opacity-50"></div>
-                {item}
-                {item === 'Messages' && <span className="ml-auto bg-[#EEF2FF] text-[#4F46E5] text-[10px] font-bold px-2 py-0.5 rounded-full">3</span>}
-              </Link>
-            ))}
-          </nav>
-        </div>
-        <div className="p-4">
-          <div className="bg-[#EEF2FF] rounded-xl p-5 mb-4 relative overflow-hidden group">
-            <div className="relative z-10">
-              <h4 className="text-sm font-bold text-[#0F172A] flex items-center gap-1.5 mb-1">
-                <svg width="14" height="14" fill="currentColor" className="text-[#4F46E5]" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                Upgrade to Pro
-              </h4>
-              <p className="text-[11px] text-[#64748B] mb-3 leading-relaxed">Unlock advanced analytics, priority support and more.</p>
-              <button className="w-full bg-[#4F46E5] hover:bg-[#4338CA] text-white text-xs font-semibold py-2 rounded-lg transition-colors shadow-sm">Upgrade Now</button>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 px-2 py-2">
-            <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden shrink-0">
-               {user.avatarUrl ? <img src={user.avatarUrl} alt="avatar" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-[#4F46E5]"></div>}
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-[#0F172A] truncate">{user.name}</p>
-              <p className="text-xs text-[#64748B] capitalize">{user.roles?.[0]?.toLowerCase() || "User"}</p>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {/* MAIN WRAPPER */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        {/* TOP NAVBAR */}
-        <header className="h-[72px] bg-white border-b border-gray-200 flex items-center justify-between px-8 shrink-0">
-          <div className="flex-1 max-w-xl relative">
-            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            <input type="text" placeholder="Search projects, freelancers, invoices..." className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/20 focus:border-[#4F46E5] transition-all" />
-          </div>
-          <div className="flex items-center gap-5 pl-4">
-            <button className="relative text-gray-400 hover:text-gray-600 transition-colors">
-              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold flex items-center justify-center rounded-full border-2 border-white">5</span>
-            </button>
-            <button className="text-gray-400 hover:text-gray-600 transition-colors">
-              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-            </button>
-            <div className="h-6 w-px bg-gray-200"></div>
-            <div className="flex items-center gap-2 cursor-pointer">
-              <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden shrink-0">
-                 {user.avatarUrl ? <img src={user.avatarUrl} alt="avatar" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-[#4F46E5]"></div>}
-              </div>
-              <span className="text-sm font-semibold text-[#0F172A] hidden md:block">{user.name?.split(' ')[0]}</span>
-            </div>
-          </div>
-        </header>
-
-        {/* SCROLLABLE CONTENT */}
-        <div className="flex-1 overflow-y-auto">
+  return (
+    <AppLayout user={user}>
+      <div className="flex-1 overflow-y-auto">
           <div className="max-w-[1600px] mx-auto p-8">
             
             {/* Header */}
@@ -476,9 +401,9 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
               <Pagination currentPage={safePage} totalPages={totalPages} totalItems={totalFiltered} />
 
             </div>
+            </div>
           </div>
-        </div>
       </div>
-    </div>
+    </AppLayout>
   )
 }
