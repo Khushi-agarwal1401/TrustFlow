@@ -29,15 +29,60 @@ export default async function Dashboard() {
   const allProjects = [...user.projectsAsClient, ...user.projectsAsFreelancer]
   const activeProjects = allProjects.filter((p) => p.status === "IN_PROGRESS" || p.status === "AWAITING_FUNDING" || p.status === "AWAITING_ACCEPTANCE")
   
-  // Real Data Calculations
-  const escrowProtected = activeProjects.reduce((sum, p) => sum + p.totalAmount, 0)
+  // ── Real Escrow Data ──
+  const escrowTransactions = await prisma.escrowTransaction.findMany({
+    where: {
+      milestone: { project: { OR: [{ clientId: user.id }, { freelancerId: user.id }] } },
+      status: { in: ["PENDING", "SUCCEEDED"] },
+    },
+  })
+  const escrowProtected = escrowTransactions
+    .filter((t) => t.status === "PENDING")
+    .reduce((sum, t) => sum + t.amount, 0)
+  const totalFunded = escrowTransactions
+    .filter((t) => t.status === "SUCCEEDED")
+    .reduce((sum, t) => sum + t.amount, 0)
   
-  const allMilestones = activeProjects.flatMap(p => p.milestones)
-  const completedMilestones = allMilestones.filter(m => m.status === "COMPLETED").length
-  const totalMilestones = allMilestones.length || 1
-  const milestoneProgress = Math.round((completedMilestones / totalMilestones) * 100)
+  // ── AI Trust Score Computation ──
+  const allMilestones = allProjects.flatMap(p => p.milestones)
+  const completedMilestonesCount = allMilestones.filter(m => m.status === "APPROVED" || m.status === "PAID").length
+  const totalMilestonesCount = allMilestones.length || 1
+  const milestoneCompletionRate = Math.round((completedMilestonesCount / totalMilestonesCount) * 100)
+  
+  const ratings = await prisma.rating.findMany({
+    where: { ratedUser: user.id },
+    select: { score: true },
+  })
+  const avgRating = ratings.length > 0
+    ? ratings.reduce((sum, r) => sum + r.score, 0) / ratings.length
+    : null
+  const ratingScore = avgRating ? (avgRating / 5) * 100 : 100
+  
+  const totalDisputes = await prisma.dispute.count({
+    where: { milestone: { project: { OR: [{ clientId: user.id }, { freelancerId: user.id }] } } },
+  })
+  const disputeRate = allProjects.length > 0 ? (totalDisputes / allProjects.length) * 100 : 0
+  const disputePenalty = Math.min(disputeRate * 10, 50)
+  const aiTrustScore = Math.round(
+    milestoneCompletionRate * 0.5 + ratingScore * 0.3 + (100 - disputePenalty) * 0.2
+  )
 
-  // Fetch Widgets Data
+  // ── Current Phase ──
+  const currentProject = activeProjects[0] || null
+  const currentPhase = currentProject ? {
+    title: currentProject.title,
+    status: currentProject.status,
+    role: currentProject.clientId === user.id ? "client" : "freelancer",
+    phase: currentProject.status === "DRAFT" ? "draft" : currentProject.status === "AWAITING_FUNDING" ? "funding" : "in_progress",
+    nextAction: currentProject.status === "DRAFT" ? "Review & send to freelancer" : currentProject.status === "AWAITING_FUNDING" ? "Fund escrow to start" : "Track milestone progress",
+  } : null
+
+  // ── Milestone Progress ──
+  const submittedMilestones = allMilestones.filter(m => m.status === "SUBMITTED" || m.status === "IN_REVIEW").length
+  const pendingMilestones = allMilestones.filter(m => m.status === "PENDING").length
+  const disputedMilestones = allMilestones.filter(m => m.status === "DISPUTED").length
+
+  // ── Widgets Data ──
   const notifications = await prisma.notification.findMany({
     where: { userId: user.id },
     orderBy: { createdAt: "desc" },
@@ -170,8 +215,8 @@ export default async function Dashboard() {
                   <div className="mt-auto">
                     <div className="text-[28px] font-bold text-[#0F172A] tracking-tight">₹{escrowProtected.toLocaleString()}</div>
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-[#64748B]">Across {activeProjects.length} active project{activeProjects.length !== 1 ? 's' : ''}</span>
-                      <span className="text-xs font-bold text-[#10B981]">↑ 100%</span>
+                      <span className="text-xs text-[#64748B]">Across {escrowTransactions.filter(t => t.status === 'PENDING').length || activeProjects.length} escrow{escrowTransactions.filter(t => t.status === 'PENDING').length !== 1 ? 's' : ''}</span>
+                      <span className="text-xs font-bold text-[#10B981]">↑ {Math.round((totalFunded / Math.max(escrowProtected + totalFunded, 1)) * 100)}%</span>
                     </div>
                   </div>
                 </div>
@@ -182,9 +227,9 @@ export default async function Dashboard() {
                     AI Trust Score
                   </div>
                   <div className="mt-auto">
-                    <div className="text-[28px] font-bold text-[#0F172A] tracking-tight">92%</div>
+                    <div className="text-[28px] font-bold text-[#0F172A] tracking-tight">{aiTrustScore}%</div>
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs font-bold text-[#10B981]">Excellent</span>
+                      <span className={`text-xs font-bold ${aiTrustScore >= 80 ? 'text-[#10B981]' : aiTrustScore >= 50 ? 'text-[#F59E0B]' : 'text-[#EF4444]'}`}>{aiTrustScore >= 80 ? 'Excellent' : aiTrustScore >= 50 ? 'Needs Review' : 'Critical'}</span>
                     </div>
                   </div>
                 </div>
@@ -195,10 +240,16 @@ export default async function Dashboard() {
                     Current Phase
                   </div>
                   <div className="mt-auto">
-                    <div className="text-[18px] font-bold text-[#0F172A] tracking-tight truncate">{activeProjects[0]?.title || "No active project"}</div>
-                    <div className="text-xs text-[#64748B] mt-1 truncate">Review & send to freelancer</div>
+                    <div className="text-[18px] font-bold text-[#0F172A] tracking-tight truncate">{currentPhase?.title || "No active project"}</div>
+                    <div className="text-xs text-[#64748B] mt-1 truncate">{currentPhase?.nextAction || "Create a project to get started"}</div>
+                    {currentPhase && (
+                      <div className="flex items-center gap-2 mt-3">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${currentPhase.role === 'client' ? 'bg-[#EEF2FF] text-[#4F46E5]' : 'bg-[#FEF3C7] text-[#F59E0B]'}`}>{currentPhase.role === 'client' ? 'Client' : 'Freelancer'}</span>
+                        <span className="text-[10px] text-[#64748B]">{currentPhase.status.replace(/_/g, ' ')}</span>
+                      </div>
+                    )}
                     <div className="w-full bg-gray-100 h-1.5 rounded-full mt-3 overflow-hidden">
-                      <div className="bg-[#4F46E5] h-full rounded-full" style={{ width: '35%' }}></div>
+                      <div className="bg-[#4F46E5] h-full rounded-full transition-all duration-700" style={{ width: `${milestoneCompletionRate}%` }}></div>
                     </div>
                   </div>
                 </div>
@@ -210,12 +261,12 @@ export default async function Dashboard() {
                   </div>
                   <div className="mt-auto flex items-end justify-between">
                     <div>
-                      <div className="text-[28px] font-bold text-[#0F172A] tracking-tight">{completedMilestones} / {totalMilestones}</div>
-                      <div className="text-xs text-[#64748B] mt-1">{milestoneProgress}% completed</div>
+                      <div className="text-[28px] font-bold text-[#0F172A] tracking-tight">{completedMilestonesCount} / {totalMilestonesCount}</div>
+                      <div className="text-xs text-[#64748B] mt-1">{milestoneCompletionRate}% completed</div>
                     </div>
                     <div className="w-12 h-12 rounded-full border-4 border-gray-100 flex items-center justify-center relative">
                        <svg className="absolute top-0 left-0 w-full h-full -rotate-90" viewBox="0 0 36 36">
-                          <path className="text-[#4F46E5]" strokeDasharray={`${milestoneProgress}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
+                          <path className="text-[#4F46E5]" strokeDasharray={`${milestoneCompletionRate}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
                        </svg>
                     </div>
                   </div>
