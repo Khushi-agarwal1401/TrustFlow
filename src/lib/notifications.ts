@@ -1,24 +1,11 @@
 import { prisma } from "./prisma"
 import { resend } from "./resend"
 
-type EventType =
-  | "MILESTONE_SUBMITTED"
-  | "MILESTONE_APPROVED"
-  | "MILESTONE_REJECTED"
-  | "DISPUTE_OPENED"
-  | "DISPUTE_RESOLVED"
-  | "INVITE_ACCEPTED"
-  | "FUNDS_DEPOSITED"
-  | "PROJECT_COMPLETED"
-  | "RISK_DETECTED"
-  | "FREELANCER_REPLACED"
-
 interface SendNotificationParams {
   userId: string
   projectId: string
-  type: EventType
-  title: string
-  message: string
+  eventType: string
+  payload: Record<string, unknown>
 }
 
 export async function createNotification(params: SendNotificationParams) {
@@ -26,17 +13,16 @@ export async function createNotification(params: SendNotificationParams) {
     data: {
       projectId: params.projectId,
       actorId: params.userId,
-      type: params.type,
-      metadata: { title: params.title, message: params.message },
+      eventType: params.eventType,
+      metadata: params.payload as any,
     },
   })
 
   await prisma.notification.create({
     data: {
       userId: params.userId,
-      projectEventId: event.id,
-      title: params.title,
-      message: params.message,
+      type: params.eventType,
+      payload: params.payload as any,
     },
   })
 
@@ -50,8 +36,8 @@ export async function sendEmailNotification(params: SendNotificationParams) {
   await resend.emails.send({
     from: "TrustFlow <notifications@trustflow.ai>",
     to: user.email,
-    subject: params.title,
-    html: `<p>${params.message}</p>`,
+    subject: params.eventType,
+    html: `<p>${JSON.stringify(params.payload)}</p>`,
   })
 }
 

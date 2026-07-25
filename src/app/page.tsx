@@ -12,12 +12,12 @@ export default async function Dashboard() {
     where: { id: session.user.id },
     include: {
       projectsAsClient: {
-        include: { freelancer: true, milestones: true },
+        include: { freelancer: true, client: true, milestones: true },
         orderBy: { createdAt: "desc" },
         take: 20,
       },
       projectsAsFreelancer: {
-        include: { client: true, milestones: true },
+        include: { freelancer: true, client: true, milestones: true },
         orderBy: { createdAt: "desc" },
         take: 20,
       },
@@ -28,7 +28,7 @@ export default async function Dashboard() {
 
   const allProjects = [...user.projectsAsClient, ...user.projectsAsFreelancer]
 
-  const activeCount = allProjects.filter((p) => p.status === "ACTIVE" || p.status === "AWAITING_FUNDING" || p.status === "IN_PROGRESS").length
+  const activeCount = allProjects.filter((p) => p.status === "IN_PROGRESS" || p.status === "AWAITING_FUNDING").length
   const completedCount = allProjects.filter((p) => p.status === "COMPLETED").length
   const awaitingCount = allProjects.filter((p) => p.status === "AWAITING_ACCEPTANCE").length
 
@@ -69,7 +69,7 @@ export default async function Dashboard() {
                 DRAFT: "text-text-muted",
                 AWAITING_ACCEPTANCE: "text-warning",
                 AWAITING_FUNDING: "text-info",
-                ACTIVE: "text-accent-primary",
+                DECLINED: "text-danger",
                 IN_PROGRESS: "text-accent-primary",
                 COMPLETED: "text-success",
                 DISPUTED: "text-danger",

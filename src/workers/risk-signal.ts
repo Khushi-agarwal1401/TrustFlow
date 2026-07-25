@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/prisma"
-import { computeAndStoreRiskSignal } from "@/lib/risk-signals"
+import { computeRiskSignals } from "@/lib/risk-signals"
 import { riskSignalQueue, redisConnection } from "@/lib/queue"
 import { Worker } from "bullmq"
 
 async function processRiskSignal(job: { data: { projectId: string } }) {
   const { projectId } = job.data
-  return await computeAndStoreRiskSignal(projectId)
+  return await computeRiskSignals(projectId)
 }
 
 export function startRiskSignalWorker() {

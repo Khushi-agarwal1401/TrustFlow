@@ -1,0 +1,47 @@
+{
+  "common": {
+    "dashboard": "Dashboard",
+    "projects": "Projects",
+    "settings": "Settings",
+    "signOut": "Sign Out",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "create": "Create",
+    "search": "Search",
+    "noData": "No data available"
+  },
+  "project": {
+    "new": "New Project",
+    "title": "Project Title",
+    "description": "Description",
+    "budget": "Budget",
+    "status": "Status",
+    "milestones": "Milestones",
+    "contract": "Contract",
+    "proposals": "Proposals",
+    "messages": "Messages",
+    "legal": "Legal"
+  },
+  "marketplace": {
+    "title": "Marketplace",
+    "browse": "Browse Projects",
+    "submitProposal": "Submit Proposal",
+    "bidAmount": "Bid Amount",
+    "coverLetter": "Cover Letter"
+  },
+  "analytics": {
+    "title": "Analytics",
+    "totalRevenue": "Total Revenue",
+    "completionRate": "Completion Rate",
+    "avgProjectValue": "Avg Project Value",
+    "monthlyRevenue": "Monthly Revenue"
+  },
+  "error": {
+    "notFound": "Not found",
+    "forbidden": "Access denied",
+    "unauthorized": "Please sign in",
+    "generic": "Something went wrong"
+  }
+}
