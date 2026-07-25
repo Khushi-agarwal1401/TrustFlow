@@ -1,26 +1,79 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@theme {
+  --color-bg-base: #0B0A1F;
+  --color-bg-surface: #13122D;
+  --color-bg-elevated: #1C1B3B;
+  --color-bg-hover: #252449;
+  --color-border-subtle: #2D2B50;
+  --color-border-default: #3D3B60;
+  --color-text-primary: #F1F0FF;
+  --color-text-secondary: #A09FC0;
+  --color-text-muted: #6E6D8F;
+  --color-accent-primary: #6C63FF;
+  --color-accent-hover: #5A52E0;
+  --color-accent-subtle: rgba(108, 99, 255, 0.1);
+  --color-success: #34D399;
+  --color-warning: #FBBF24;
+  --color-danger: #F87171;
+  --color-info: #60A5FA;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-bg-base);
+  color: var(--color-text-primary);
+  font-family: "Inter", sans-serif;
+}
+
+.glass {
+  background: rgba(28, 27, 59, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.card {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
+}
+
+.btn-primary {
+  background: var(--color-accent-primary);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-primary:hover {
+  background: var(--color-accent-hover);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text-secondary);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  border: 1px solid var(--color-border-default);
+  transition: background 0.2s;
+}
+
+.btn-ghost:hover {
+  background: var(--color-bg-hover);
+}
+
+.input {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--color-text-primary);
+  width: 100%;
+  outline: none;
+}
+
+.input:focus {
+  border-color: var(--color-accent-primary);
 }
