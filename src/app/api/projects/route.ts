@@ -14,6 +14,7 @@ export async function POST(request: NextRequest) {
       title,
       description,
       totalAmount: Math.round(totalAmount * 100),
+      freelancerInviteEmail: "",
       status: "DRAFT",
       clientId: user!.id,
     },

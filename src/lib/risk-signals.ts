@@ -8,7 +8,7 @@ interface RiskResult {
 export async function computeRiskSignals(projectId: string): Promise<RiskResult> {
   const project = await prisma.project.findUnique({
     where: { id: projectId },
-    include: { milestones: true, disputes: true },
+    include: { milestones: true },
   })
 
   if (!project) return { level: "GREEN", signals: [] }
@@ -37,10 +37,6 @@ export async function computeRiskSignals(projectId: string): Promise<RiskResult>
     signals.push(`${revisionCount} milestone(s) with 2+ revisions`)
   }
 
-  if (project.disputes.length > 0) {
-    signals.push(`${project.disputes.length} active dispute(s)`)
-  }
-
   let level: RiskResult["level"] = "GREEN"
   if (signals.length >= 3) level = "RED"
   else if (signals.length >= 1) level = "AMBER"
@@ -49,7 +45,7 @@ export async function computeRiskSignals(projectId: string): Promise<RiskResult>
     data: {
       projectId,
       level,
-      signals,
+      reason: signals.join("; ") || "No risks detected",
       computedAt: now,
     },
   })

@@ -4,7 +4,6 @@ interface MilestoneInput {
   title: string
   description: string
   amount: number
-  deliverables: string[]
 }
 
 interface ContractOutput {
@@ -25,16 +24,14 @@ Total budget: $${budget}
 
 Rules:
 - Break the work into 2-6 logical milestones
-- Each milestone must have a title, description, amount, and deliverables list
+- Each milestone must have a title, description, and amount
 - The sum of all milestone amounts must equal exactly the total budget
 - Amounts must be integers (representing cents)
-- Keep the payout reasonable per milestone (don't front-load or back-load unfairly)
-- Be realistic about what each milestone delivers
 
 Return JSON exactly in this format (no markdown, no code fences):
 {
   "milestones": [
-    { "title": "string", "description": "string", "amount": number, "deliverables": ["string"] }
+    { "title": "string", "description": "string", "amount": number }
   ],
   "terms": "string (a short paragraph of standard freelance terms)"
 }`
