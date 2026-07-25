@@ -18,7 +18,7 @@ export function IntegrationDeliveries({ integrationId }: { integrationId: string
 
   useEffect(() => {
     if (!expanded) return
-    setLoading(true)
+    if (deliveries.length > 0) return
     fetch(`/api/integrations/${integrationId}/deliveries`)
       .then((r) => r.json())
       .then((data) => {
@@ -26,12 +26,15 @@ export function IntegrationDeliveries({ integrationId }: { integrationId: string
         setLoading(false)
       })
       .catch(() => setLoading(false))
-  }, [integrationId, expanded])
+  }, [integrationId, expanded, deliveries.length])
 
   return (
     <div>
       <button
-        onClick={() => setExpanded(!expanded)}
+        onClick={() => {
+          if (!expanded && deliveries.length === 0) setLoading(true)
+          setExpanded(!expanded)
+        }}
         className="text-xs text-accent-primary hover:underline transition"
       >
         {expanded ? "Hide Deliveries" : `View Deliveries (${deliveries.length})`}

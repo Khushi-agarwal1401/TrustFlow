@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { Prisma } from "@prisma/client"
 import { getAuthUser, requireAuth } from "@/lib/api-helpers"
 
 export async function GET() {
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
       projectId,
       fromUserId: user!.id,
       toUserId,
-      lineItems: lineItems as any,
+      lineItems: lineItems as Prisma.InputJsonValue,
       subtotal,
       taxPercent: taxPercent || 0,
       taxAmount,

@@ -28,16 +28,17 @@ export async function GET() {
     ? Math.round(allProjects.reduce((s, p) => s + p.totalAmount, 0) / allProjects.length)
     : 0
 
-  const monthlyRevenue = await prisma.$queryRaw<Array<{ month: string; total: number }>>`
-    SELECT to_char("createdAt", 'YYYY-MM') as month,
-           SUM("totalAmount") as total
-    FROM "Project"
+  const rows = await prisma.$queryRaw<Array<{ month: string; total: bigint }>>`
+    SELECT to_char("created_at", 'YYYY-MM') as month,
+           COALESCE(SUM("total_amount"), 0) as total
+    FROM "projects"
     WHERE status = 'COMPLETED'
-      AND ("clientId" = ${user!.id} OR "freelancerId" = ${user!.id})
+      AND ("client_id" = ${user!.id} OR "freelancer_id" = ${user!.id})
     GROUP BY month
     ORDER BY month DESC
     LIMIT 12
   `
+  const monthlyRevenue = rows.map((r) => ({ month: r.month, total: Number(r.total) }))
 
   return NextResponse.json({
     overview: {

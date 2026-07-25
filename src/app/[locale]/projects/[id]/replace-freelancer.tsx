@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+
 
 interface ReplaceFreelancerProps {
   projectId: string
@@ -10,7 +10,6 @@ interface ReplaceFreelancerProps {
 }
 
 export function ReplaceFreelancer({ projectId, isClient, hasFreelancer }: ReplaceFreelancerProps) {
-  const router = useRouter()
   const [showForm, setShowForm] = useState(false)
   const [email, setEmail] = useState("")
   const [loading, setLoading] = useState(false)

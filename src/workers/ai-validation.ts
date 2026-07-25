@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { validateSubmission } from "@/lib/ai-validator"
 import { aiValidationQueue, redisConnection } from "@/lib/queue"
@@ -37,7 +38,7 @@ async function processValidation(job: { data: { submissionId: string } }) {
       submissionId: submission.id,
       matchSummary: result.matchSummary,
       confidence: result.confidence,
-      rawModelOutput: result.rawModelOutput as any,
+      rawModelOutput: result.rawModelOutput as Prisma.InputJsonValue,
       modelVersion: result.modelVersion,
     },
   })

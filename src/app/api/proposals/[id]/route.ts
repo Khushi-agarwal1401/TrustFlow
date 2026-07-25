@@ -42,7 +42,7 @@ export async function PATCH(
 
   const proposal = await prisma.proposal.findUnique({
     where: { id },
-    include: { project: true },
+    include: { project: { include: { milestones: true } } },
   })
 
   if (!proposal) return NextResponse.json({ error: "Not found" }, { status: 404 })
@@ -51,6 +51,11 @@ export async function PATCH(
     if (proposal.project.clientId !== user!.id) return NextResponse.json({ error: "Only client can accept/reject" }, { status: 403 })
 
     if (action === "ACCEPT") {
+      const sumMilestones = proposal.project.milestones.reduce((sum, m) => sum + m.amount, 0)
+      if (sumMilestones !== proposal.project.totalAmount) {
+        return NextResponse.json({ error: "Milestone amounts must equal the project total amount before accepting a proposal" }, { status: 400 })
+      }
+
       await prisma.$transaction([
         prisma.proposal.updateMany({ where: { projectId: proposal.projectId, status: "PENDING" }, data: { status: "REJECTED" } }),
         prisma.proposal.update({ where: { id }, data: { status: "ACCEPTED" } }),

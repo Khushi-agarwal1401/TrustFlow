@@ -1,4 +1,5 @@
 import * as React from "react"
+import Image from "next/image"
 import { cn } from "@/lib/utils"
 
 interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -47,7 +48,7 @@ function Avatar({ className, name, src, size = "md", fallback, ...props }: Avata
       {...props}
     >
       {src ? (
-        <img src={src} alt={name || "Avatar"} className="h-full w-full object-cover" />
+        <Image src={src} alt={name || "Avatar"} fill unoptimized className="object-cover" />
       ) : (
         initials
       )}

@@ -18,7 +18,6 @@ interface FreelancerProfile {
 
 export default function ProfileEditPage() {
   const { data: session } = useSession()
-  const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)

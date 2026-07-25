@@ -10,14 +10,17 @@ export default function NotificationsPage() {
   const [status, setStatus] = useState<string | null>(null)
 
   useEffect(() => {
+    let mounted = true
     if ("serviceWorker" in navigator && "PushManager" in window) {
-      setPushSupported(true)
       navigator.serviceWorker.ready.then((reg) => {
+        if (!mounted) return
+        setPushSupported(true)
         reg.pushManager.getSubscription().then((sub) => {
-          setPushEnabled(!!sub)
+          if (mounted) setPushEnabled(!!sub)
         })
       })
     }
+    return () => { mounted = false }
   }, [])
 
   async function subscribePush() {

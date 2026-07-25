@@ -8,9 +8,6 @@ export async function sendPushNotification(userId: string, title: string, body: 
   for (const sub of subs) {
     try {
       const payload = JSON.stringify({ title, body })
-      const encoder = new TextEncoder()
-      const keyBytes = encoder.encode(sub.p256dhKey)
-      const authBytes = encoder.encode(sub.authKey)
 
       await fetch(sub.endpoint, {
         method: "POST",
