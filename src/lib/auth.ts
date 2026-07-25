@@ -7,8 +7,35 @@ import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "./prisma"
 import "./auth-types"
 
+const baseAdapter = PrismaAdapter(prisma)
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter: PrismaAdapter(prisma),
+  adapter: {
+    ...baseAdapter,
+    createUser: (data: any) => {
+      const { image, emailVerified, ...rest } = data
+      return baseAdapter.createUser!({ ...rest, avatarUrl: image }) as any
+    },
+    getUser: async (id: string) => {
+      const user = await baseAdapter.getUser!(id)
+      if (user) (user as any).image = (user as any).avatarUrl
+      return user
+    },
+    getUserByEmail: async (email: string) => {
+      const user = await baseAdapter.getUserByEmail!(email)
+      if (user) (user as any).image = (user as any).avatarUrl
+      return user
+    },
+    getUserByAccount: async (provider_providerAccountId: { provider: string; providerAccountId: string }) => {
+      const user = await baseAdapter.getUserByAccount!(provider_providerAccountId)
+      if (user) (user as any).image = (user as any).avatarUrl
+      return user
+    },
+    updateUser: (data: any) => {
+      const { image, emailVerified, ...rest } = data
+      return baseAdapter.updateUser!({ ...rest, ...(image && { avatarUrl: image }) }) as any
+    },
+  },
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
@@ -58,7 +85,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   pages: { signIn: "/auth/signin" },
   callbacks: {
     session({ session, user }) {
-      if (session.user) session.user.id = user.id
+      if (session.user) {
+        session.user.id = user.id
+        ;(session.user as any).image = (user as any).avatarUrl || (user as any).image
+      }
       return session
     },
   },
