@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { Prisma } from "@prisma/client"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -8,7 +9,7 @@ export async function GET(request: NextRequest) {
   const maxBudget = parseInt(searchParams.get("maxBudget") || "999999999")
   const sort = searchParams.get("sort") || "newest"
 
-  const where: Record<string, unknown> = {
+  const where: Prisma.ProjectWhereInput = {
     isListed: true,
     status: "AWAITING_FUNDING",
     totalAmount: { gte: minBudget, lte: maxBudget },
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
     : { listedAt: "desc" as const }
 
   const projects = await prisma.project.findMany({
-    where: where as any,
+    where,
     orderBy,
     include: {
       client: { select: { id: true, name: true, avatarUrl: true } },
