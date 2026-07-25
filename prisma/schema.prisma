@@ -1,0 +1,315 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CLIENT
+  FREELANCER
+  ADMIN
+}
+
+enum ProjectStatus {
+  DRAFT
+  AWAITING_ACCEPTANCE
+  DECLINED
+  AWAITING_FUNDING
+  IN_PROGRESS
+  DISPUTED
+  COMPLETED
+  CANCELLED
+}
+
+enum MilestoneStatus {
+  PENDING
+  FUNDED
+  SUBMITTED
+  IN_REVIEW
+  REVISION_REQUESTED
+  APPROVED
+  PAID
+  DISPUTED
+}
+
+enum EscrowType {
+  FUND
+  RELEASE
+  REFUND
+}
+
+enum EscrowProvider {
+  STRIPE
+  RAZORPAY
+}
+
+enum EscrowStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+enum ConfidenceLevel {
+  HIGH
+  NEEDS_REVIEW
+}
+
+enum RiskLevel {
+  GREEN
+  AMBER
+  RED
+}
+
+enum DisputeStatus {
+  EVIDENCE_PENDING
+  AI_SUGGESTED
+  RESOLVED_ACCEPTED
+  ESCALATED
+  RESOLVED_ADMIN
+}
+
+model User {
+  id                        String   @id @default(uuid())
+  email                     String   @unique
+  phone                     String?
+  passwordHash              String?
+  name                      String
+  avatarUrl                 String?
+  roles                     UserRole[]
+  stripeConnectAccountId    String?
+  stripeCustomerId          String?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  projectsAsClient          Project[]       @relation("ClientProjects")
+  projectsAsFreelancer      Project[]       @relation("FreelancerProjects")
+  disputesOpened            Dispute[]       @relation("DisputeOpener")
+  disputesResolved          Dispute[]       @relation("DisputeResolver")
+  disputeEvidences          DisputeEvidence[]
+  ratingsGiven              Rating[]        @relation("RatingGiver")
+  ratingsReceived           Rating[]        @relation("RatingReceiver")
+  notifications             Notification[]
+  projectEvents             ProjectEvent[]
+  accounts                  Account[]
+  sessions                  Session[]
+}
+
+model Project {
+  id                    String        @id @default(uuid())
+  clientId              String
+  freelancerId          String?
+  freelancerInviteEmail String
+  inviteToken           String?       @unique
+  replacedAt            DateTime?
+  replacedById          String?
+  previousFreelancerId  String?
+  title                 String
+  description           String
+  totalAmount           Int
+  currency              String        @default("USD")
+  status                ProjectStatus @default(DRAFT)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  client                User          @relation("ClientProjects", fields: [clientId], references: [id])
+  freelancer            User?         @relation("FreelancerProjects", fields: [freelancerId], references: [id])
+  contract              Contract?
+  milestones            Milestone[]
+  riskSignals           RiskSignal[]
+  projectEvents         ProjectEvent[]
+  ratings               Rating[]
+
+  @@index([status])
+}
+
+model Milestone {
+  id                      String          @id @default(uuid())
+  projectId               String
+  sequence                Int
+  title                   String
+  deliverableDescription  String
+  amount                  Int
+  dueDate                 DateTime?
+  status                  MilestoneStatus @default(PENDING)
+  revisionCount           Int             @default(0)
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+
+  project                 Project         @relation(fields: [projectId], references: [id])
+  escrowTransactions      EscrowTransaction[]
+  submissions             Submission[]
+  disputes                Dispute[]
+
+  @@index([status])
+}
+
+model Contract {
+  id                        String    @id @default(uuid())
+  projectId                 String    @unique
+  aiGeneratedDraft          Json
+  finalTerms                Json?
+  acceptedByFreelancerAt    DateTime?
+  acceptedIp                String?
+  pdfUrl                    String?
+  createdAt                 DateTime  @default(now())
+
+  project                   Project   @relation(fields: [projectId], references: [id])
+}
+
+model EscrowTransaction {
+  id                  String         @id @default(uuid())
+  milestoneId         String
+  type                EscrowType
+  amount              Int
+  provider            EscrowProvider
+  providerReferenceId String
+  idempotencyKey      String         @unique
+  status              EscrowStatus   @default(PENDING)
+  createdAt           DateTime       @default(now())
+
+  milestone           Milestone      @relation(fields: [milestoneId], references: [id])
+
+  @@index([idempotencyKey])
+}
+
+model Submission {
+  id            String   @id @default(uuid())
+  milestoneId   String
+  description   String
+  fileUrls      String[]
+  linkEvidence  Json?
+  submittedAt   DateTime @default(now())
+
+  milestone     Milestone @relation(fields: [milestoneId], references: [id])
+  aiReview      AIReview?
+}
+
+model AIReview {
+  id              String          @id @default(uuid())
+  submissionId    String          @unique
+  matchSummary    String
+  confidence      ConfidenceLevel
+  rawModelOutput  Json
+  modelVersion    String
+  createdAt       DateTime        @default(now())
+
+  submission      Submission      @relation(fields: [submissionId], references: [id])
+}
+
+model RiskSignal {
+  id          String    @id @default(uuid())
+  projectId   String
+  level       RiskLevel
+  reason      String
+  computedAt  DateTime  @default(now())
+
+  project     Project   @relation(fields: [projectId], references: [id])
+
+  @@index([projectId, computedAt])
+}
+
+model Dispute {
+  id                      String        @id @default(uuid())
+  milestoneId             String
+  openedBy                String
+  status                  DisputeStatus @default(EVIDENCE_PENDING)
+  aiSuggestedResolution   Json?
+  resolvedBy              String?
+  resolutionNotes         String?
+  createdAt               DateTime      @default(now())
+  resolvedAt              DateTime?
+
+  milestone               Milestone     @relation(fields: [milestoneId], references: [id])
+  opener                  User          @relation("DisputeOpener", fields: [openedBy], references: [id])
+  resolver                User?         @relation("DisputeResolver", fields: [resolvedBy], references: [id])
+  evidences               DisputeEvidence[]
+}
+
+model DisputeEvidence {
+  id            String   @id @default(uuid())
+  disputeId     String
+  submittedBy   String
+  statement     String
+  fileUrls      String[]
+  createdAt     DateTime @default(now())
+
+  dispute       Dispute  @relation(fields: [disputeId], references: [id])
+  submitter     User     @relation(fields: [submittedBy], references: [id])
+}
+
+model Rating {
+  id          String   @id @default(uuid())
+  projectId   String
+  ratedBy     String
+  ratedUser   String
+  score       Int
+  comment     String?
+  createdAt   DateTime @default(now())
+
+  project     Project  @relation(fields: [projectId], references: [id])
+  rater       User     @relation("RatingGiver", fields: [ratedBy], references: [id])
+  target      User     @relation("RatingReceiver", fields: [ratedUser], references: [id])
+}
+
+model ProjectEvent {
+  id          String   @id @default(uuid())
+  projectId   String
+  actorId     String?
+  eventType   String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  project     Project  @relation(fields: [projectId], references: [id])
+  actor       User?    @relation(fields: [actorId], references: [id])
+
+  @@index([projectId, createdAt])
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  type      String
+  payload   Json?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id])
+}
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user              User    @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
