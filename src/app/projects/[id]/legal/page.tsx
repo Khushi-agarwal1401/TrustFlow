@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 
 export default function LegalPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const { data: session } = useSession()
+  useSession()
   const router = useRouter()
   const [project, setProject] = useState<{ title: string } | null>(null)
   const [contract, setContract] = useState<{ id: string; signatures: { id: string; user: { name: string }; signedAt: string }[] } | null>(null)
@@ -19,7 +19,7 @@ export default function LegalPage({ params }: { params: Promise<{ id: string }> 
       const projData = await projRes.json()
       setProject(projData)
       if (projData.contract) {
-        const sigRes = await fetch(`/api/contracts/${projData.contract.id}/pdf`)
+        await fetch(`/api/contracts/${projData.contract.id}/pdf`)
         setContract(projData.contract)
       }
       setLoading(false)

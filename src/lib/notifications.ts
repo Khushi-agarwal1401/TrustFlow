@@ -1,5 +1,7 @@
 import { prisma } from "./prisma"
 import { resend } from "./resend"
+import { riskSignalQueue } from "./queue"
+import { Prisma } from "@prisma/client"
 
 interface SendNotificationParams {
   userId: string
@@ -14,7 +16,7 @@ export async function createNotification(params: SendNotificationParams) {
       projectId: params.projectId,
       actorId: params.userId,
       eventType: params.eventType,
-      metadata: params.payload as any,
+      metadata: params.payload as Prisma.InputJsonValue,
     },
   })
 
@@ -22,9 +24,12 @@ export async function createNotification(params: SendNotificationParams) {
     data: {
       userId: params.userId,
       type: params.eventType,
-      payload: params.payload as any,
+      payload: params.payload as Prisma.InputJsonValue,
     },
   })
+
+  // Trigger risk evaluation asynchronously
+  await riskSignalQueue.add("evaluate", { projectId: params.projectId })
 
   return event
 }

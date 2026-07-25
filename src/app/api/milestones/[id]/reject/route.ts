@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAuthUser, requireAuth } from "@/lib/api-helpers"
+import { sendEmailNotification } from "@/lib/notifications"
 
 export async function POST(
   request: NextRequest,
@@ -30,9 +31,25 @@ export async function POST(
   await prisma.milestone.update({
     where: { id },
     data: {
-      status: "PENDING",
+      status: "REVISION_REQUESTED",
       revisionCount: { increment: 1 },
     },
+  })
+
+  await prisma.projectEvent.create({
+    data: {
+      projectId: milestone.projectId,
+      actorId: user!.id,
+      eventType: "MILESTONE_REJECTED",
+      metadata: { milestoneId: id, reason },
+    }
+  })
+
+  await sendEmailNotification({
+    userId: milestone.project.freelancerId!,
+    projectId: milestone.projectId,
+    eventType: "MILESTONE_REJECTED",
+    payload: { milestoneId: id, reason },
   })
 
   return NextResponse.json({ success: true, reason })

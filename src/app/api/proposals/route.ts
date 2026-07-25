@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAuthUser, requireAuth } from "@/lib/api-helpers"
+import { Prisma } from "@prisma/client"
 
 export async function GET(request: NextRequest) {
   const user = await getAuthUser()
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
   if (projectId) where.projectId = projectId
 
   const proposals = await prisma.proposal.findMany({
-    where: where as any,
+    where: where as Prisma.ProposalWhereInput,
     include: { project: { select: { id: true, title: true, totalAmount: true, status: true } } },
     orderBy: { createdAt: "desc" },
   })

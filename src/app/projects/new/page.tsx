@@ -7,7 +7,7 @@ import { useSession } from "next-auth/react"
 
 export default function NewProjectPage() {
   const router = useRouter()
-  const { data: session } = useSession()
+  useSession()
   const [step, setStep] = useState(1)
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")

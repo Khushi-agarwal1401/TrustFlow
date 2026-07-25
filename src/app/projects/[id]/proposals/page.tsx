@@ -1,14 +1,14 @@
 "use client"
 
 import { useState, useEffect, use } from "react"
-import { useRouter } from "next/navigation"
+
 import Link from "next/link"
 import { useSession } from "next-auth/react"
 
 export default function ProjectProposalsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const { data: session } = useSession()
-  const router = useRouter()
+
   const [project, setProject] = useState<{ id: string; title: string; clientId: string; totalAmount: number; isListed: boolean } | null>(null)
   const [proposals, setProposals] = useState<{ id: string; coverLetter: string; bidAmount: number; status: string; createdAt: string; freelancer: { id: string; name: string } }[]>([])
   const [loading, setLoading] = useState(true)

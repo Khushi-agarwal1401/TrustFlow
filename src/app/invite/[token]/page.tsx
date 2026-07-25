@@ -35,14 +35,14 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
 
   async function handleRespond(accept: boolean) {
     if (!session) {
-      signIn()
+      signIn(undefined, { callbackUrl: `/invite/${token}` })
       return
     }
     setResponding(true)
     const res = await fetch(`/api/invite/${token}/respond`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ accept }),
+      body: JSON.stringify({ action: accept ? "ACCEPT" : "DECLINE" }),
     })
     if (res.ok) {
       router.push(accept ? `/projects/${data!.project.id}` : "/")

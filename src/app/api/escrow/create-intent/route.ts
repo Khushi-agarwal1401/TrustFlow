@@ -49,5 +49,14 @@ export async function POST(request: NextRequest) {
     })
   }
 
+  await prisma.projectEvent.create({
+    data: {
+      projectId,
+      actorId: user!.id,
+      eventType: "FUNDING_INTENT_CREATED",
+      metadata: { paymentIntentId: paymentIntent.id, totalAmount },
+    }
+  })
+
   return NextResponse.json({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id })
 }

@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { Poppins, Inter } from "next/font/google"
 import { NextIntlClientProvider } from "next-intl"
 import { getLocale, getMessages } from "next-intl/server"
-import "./globals.css"
+import "@/app/globals.css"
 import { Providers } from "@/components/providers"
 
 const poppins = Poppins({

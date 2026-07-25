@@ -5,7 +5,7 @@ import { useState } from "react"
 
 export default function SignInPage() {
   const [email, setEmail] = useState("")
-  const [sent, setSent] = useState(false)
+  const [password, setPassword] = useState("")
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-bg-base">
@@ -40,38 +40,33 @@ export default function SignInPage() {
               </div>
             </div>
 
-            {sent ? (
-              <div className="text-center p-5 bg-accent-subtle rounded-xl animate-fade-in">
-                <div className="w-10 h-10 rounded-full bg-accent-primary/20 flex items-center justify-center mx-auto mb-3">
-                  <svg className="w-5 h-5 text-accent-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <p className="text-text-primary font-medium">Check your email!</p>
-                <p className="text-text-secondary text-sm mt-1">A magic link has been sent to {email}</p>
-              </div>
-            ) : (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  signIn("resend", { email, callbackUrl: "/" })
-                  setSent(true)
-                }}
-                className="space-y-4"
-              >
-                <input
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="input"
-                  required
-                />
-                <button type="submit" className="btn-primary w-full">
-                  Send magic link
-                </button>
-              </form>
-            )}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                signIn("credentials", { email, password, callbackUrl: "/" })
+              }}
+              className="space-y-4"
+            >
+              <input
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="input"
+                required
+              />
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="input"
+                required
+              />
+              <button type="submit" className="btn-primary w-full">
+                Sign In / Sign Up
+              </button>
+            </form>
           </div>
         </div>
       </div>

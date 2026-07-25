@@ -2,6 +2,8 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { ProjectActions } from "./project-actions"
+import { MilestoneActions } from "./milestone-actions"
+import Link from "next/link"
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -12,7 +14,16 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   const project = await prisma.project.findUnique({
     where: { id },
     include: {
-      milestones: { orderBy: { sequence: "asc" } },
+      milestones: { 
+        orderBy: { sequence: "asc" },
+        include: {
+          submissions: {
+            orderBy: { submittedAt: "desc" },
+            take: 1,
+            include: { aiReview: true }
+          }
+        }
+      },
       contract: true,
       freelancer: true,
       client: true,
@@ -41,7 +52,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     <div className="max-w-6xl mx-auto px-6 py-6">
       <header className="glass-strong rounded-2xl px-6 py-3 mb-8 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <a href="/" className="text-text-secondary hover:text-text-primary transition">&larr; Dashboard</a>
+          <Link href="/" className="text-text-secondary hover:text-text-primary transition">&larr; Dashboard</Link>
           <span className="text-text-muted">/</span>
           <h1 className="text-lg font-semibold truncate" style={{ fontFamily: "var(--font-poppins)" }}>{project.title}</h1>
         </div>
@@ -86,6 +97,26 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
                           </span>
                           {m.revisionCount > 0 && (
                             <span className="text-[10px] text-text-muted ml-2">{m.revisionCount} revision{m.revisionCount !== 1 ? "s" : ""}</span>
+                          )}
+
+                          {m.submissions?.[0]?.aiReview && (
+                            <div className="mt-4 p-3 rounded-lg border border-border-subtle bg-bg-base">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-xs font-semibold text-accent-primary flex items-center gap-1">
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a10 10 0 1 0 10 10H12V2z"/><path d="M12 12 2.1 7.1"/></svg>
+                                  AI Summary
+                                </span>
+                                <span className={`badge ${m.submissions[0].aiReview.confidence === 'HIGH' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
+                                  {m.submissions[0].aiReview.confidence === 'HIGH' ? 'High Confidence' : 'Needs your review'}
+                                </span>
+                              </div>
+                              <p className="text-xs text-text-secondary leading-relaxed">{m.submissions[0].aiReview.matchSummary}</p>
+                              <p className="text-[10px] text-text-muted mt-2">AI-generated — review before relying on it</p>
+                            </div>
+                          )}
+                          
+                          {isClient && m.status === "SUBMITTED" && (
+                            <MilestoneActions milestoneId={m.id} />
                           )}
                         </div>
                       </div>
@@ -189,6 +220,8 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
                 <a href={`/projects/${id}/contract`} className="block text-sm text-accent-primary hover:underline">View Contract</a>
                 <a href={`/projects/${id}/fund`} className="block text-sm text-accent-primary hover:underline">Fund Milestones</a>
                 <a href={`/projects/${id}/legal`} className="block text-sm text-accent-primary hover:underline">Legal & Signatures</a>
+                <a href={`/projects/${id}/audit`} className="block text-sm text-accent-primary hover:underline">Audit Log</a>
+                <a href={`/projects/${id}/dispute`} className="block text-sm text-danger hover:underline">Dispute Resolution</a>
                 {isFreelancer && (
                   <a href={`/projects/${id}/proposals`} className="block text-sm text-accent-primary hover:underline">Proposals</a>
                 )}

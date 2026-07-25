@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAuthUser, requireAuth } from "@/lib/api-helpers"
+import { Prisma } from "@prisma/client"
 
 export async function GET(
   request: NextRequest,
@@ -14,14 +15,14 @@ export async function GET(
   const { searchParams } = new URL(request.url)
   const before = searchParams.get("before")
 
-  const where: Record<string, unknown> = {
+  const where: Prisma.MessageWhereInput = {
     projectId: id,
     project: { OR: [{ clientId: user!.id }, { freelancerId: user!.id }] },
   }
   if (before) where.createdAt = { lt: new Date(before) }
 
   const messages = await prisma.message.findMany({
-    where: where as any,
+    where,
     include: { sender: { select: { id: true, name: true, avatarUrl: true } } },
     orderBy: { createdAt: "desc" },
     take: 50,

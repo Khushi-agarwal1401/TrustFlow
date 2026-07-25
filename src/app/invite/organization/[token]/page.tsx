@@ -39,7 +39,7 @@ export default function OrgInvitePage({ params }: { params: Promise<{ token: str
     <div className="max-w-md mx-auto p-6 mt-12">
       <div className="card p-6 text-center">
         <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: "var(--font-poppins)" }}>Organization Invite</h1>
-        <p className="text-text-secondary mb-6">You've been invited to join <strong>{org.name}</strong></p>
+        <p className="text-sm text-text-secondary mt-1">You&apos;ve been invited to join <strong>{org.name}</strong></p>
 
         {session?.user ? (
           <button onClick={handleAccept} disabled={accepting} className="btn-primary w-full">

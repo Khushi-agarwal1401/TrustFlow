@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { stripe } from "@/lib/stripe"
 import { getAuthUser, requireAuth } from "@/lib/api-helpers"
+import { sendEmailNotification } from "@/lib/notifications"
 
 export async function POST(
   request: NextRequest,
@@ -36,6 +37,22 @@ export async function POST(
   await prisma.milestone.update({
     where: { id },
     data: { status: "APPROVED" },
+  })
+
+  await prisma.projectEvent.create({
+    data: {
+      projectId: milestone.projectId,
+      actorId: user!.id,
+      eventType: "MILESTONE_APPROVED",
+      metadata: { milestoneId: id },
+    }
+  })
+
+  await sendEmailNotification({
+    userId: milestone.project.freelancerId!,
+    projectId: milestone.projectId,
+    eventType: "MILESTONE_APPROVED",
+    payload: { milestoneId: id },
   })
 
   const allMilestones = await prisma.milestone.findMany({

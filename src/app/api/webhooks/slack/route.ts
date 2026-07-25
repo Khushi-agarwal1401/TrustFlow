@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { Prisma } from "@prisma/client"
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
     data: {
       integrationId: integration.id,
       event,
-      payload: body as any,
+      payload: body as Prisma.InputJsonValue,
       status: "received",
     },
   })

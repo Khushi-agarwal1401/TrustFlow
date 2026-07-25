@@ -38,7 +38,7 @@ export default function DisputePage() {
     fetch("/api/disputes")
       .then((r) => r.json())
       .then((disputes) => {
-        const d = disputes.find((d: any) => d.id === params.id)
+        const d = disputes.find((d: DisputeData) => d.id === params.id)
         if (d) setDispute(d)
         else setError("Dispute not found")
       })

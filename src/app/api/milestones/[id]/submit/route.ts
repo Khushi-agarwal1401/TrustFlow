@@ -39,6 +39,15 @@ export async function POST(
     data: { status: "SUBMITTED" },
   })
 
+  await prisma.projectEvent.create({
+    data: {
+      projectId: milestone.projectId,
+      actorId: user!.id,
+      eventType: "MILESTONE_SUBMITTED",
+      metadata: { milestoneId: id, submissionId: submission.id },
+    }
+  })
+
   await aiValidationQueue.add("validate", {
     submissionId: submission.id,
     milestoneId: id,

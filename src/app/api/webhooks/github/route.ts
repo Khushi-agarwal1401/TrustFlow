@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { stripe } from "@/lib/stripe"
 import { prisma } from "@/lib/prisma"
+import { Prisma } from "@prisma/client"
 
 export async function GET() {
   return NextResponse.json({ message: "GitHub webhook receiver active" })
@@ -9,7 +9,6 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const body = await request.json()
   const event = request.headers.get("x-github-event") || "push"
-  const signature = request.headers.get("x-hub-signature-256")
 
   const integration = await prisma.webhookIntegration.findFirst({
     where: { provider: "GITHUB", events: { has: event } },
@@ -22,7 +21,7 @@ export async function POST(request: NextRequest) {
     data: {
       integrationId: integration.id,
       event,
-      payload: body as any,
+      payload: body as Prisma.InputJsonValue,
       status: "received",
       responseCode: 200,
     },
@@ -32,7 +31,7 @@ export async function POST(request: NextRequest) {
     data: {
       projectId: integration.projectId,
       eventType: `GITHUB_${event.toUpperCase()}`,
-      metadata: body as any,
+      metadata: body as Prisma.InputJsonValue,
     },
   })
 

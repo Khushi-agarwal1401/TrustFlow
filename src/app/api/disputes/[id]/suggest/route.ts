@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { getAuthUser, requireAuth } from "@/lib/api-helpers"
 import { suggestDisputeResolution } from "@/lib/ai-dispute"
@@ -60,7 +61,7 @@ export async function POST(
   await prisma.dispute.update({
     where: { id },
     data: {
-      aiSuggestedResolution: resolution as any,
+      aiSuggestedResolution: resolution as unknown as Prisma.InputJsonValue,
       status: "AI_SUGGESTED",
     },
   })

@@ -22,5 +22,14 @@ export async function POST(request: NextRequest) {
     data: { status: "IN_PROGRESS" },
   })
 
+  await prisma.projectEvent.create({
+    data: {
+      projectId,
+      actorId: user!.id,
+      eventType: "MILESTONE_FUNDED",
+      metadata: { paymentIntentId },
+    }
+  })
+
   return NextResponse.json({ success: true })
 }

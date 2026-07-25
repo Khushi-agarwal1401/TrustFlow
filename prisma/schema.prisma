@@ -84,6 +84,7 @@ model User {
   passwordHash              String?
   name                      String
   avatarUrl                 String?
+  image                     String?
   roles                     UserRole[]
   stripeConnectAccountId    String?
   stripeCustomerId          String?
