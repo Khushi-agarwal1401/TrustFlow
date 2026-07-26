@@ -1,4 +1,4 @@
-import { openai } from "@/lib/openai"
+import { gemini } from "@/lib/gemini"
 
 export async function splitMilestones(description: string, totalAmount: number, count: number) {
   const prompt = `Split this project into ${count} logical milestones:
@@ -14,15 +14,17 @@ Rules:
 
 Return JSON: { "milestones": [{ "title": "string", "description": "string", "amount": number }] }`
 
-  const res = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [{ role: "user", content: prompt }],
-    response_format: { type: "json_object" },
-    temperature: 0.7,
-    max_tokens: 2000,
+  const res = await gemini.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      temperature: 0.7,
+      maxOutputTokens: 2000,
+    }
   })
 
-  const content = res.choices[0]?.message?.content
+  const content = res.text
   if (!content) throw new Error("Empty response")
   return JSON.parse(content)
 }
@@ -36,15 +38,17 @@ Budget: $${(budget / 100).toLocaleString()}
 
 Return JSON: { "estimatedDays": number, "confidence": "high" | "medium" | "low", "reasoning": "string" }`
 
-  const res = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [{ role: "user", content: prompt }],
-    response_format: { type: "json_object" },
-    temperature: 0.5,
-    max_tokens: 500,
+  const res = await gemini.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      temperature: 0.5,
+      maxOutputTokens: 500,
+    }
   })
 
-  const content = res.choices[0]?.message?.content
+  const content = res.text
   if (!content) throw new Error("Empty response")
   return JSON.parse(content)
 }
@@ -60,15 +64,17 @@ Statuses: ${milestones.map((m) => `${m.title}: ${m.status}`).join(", ")}
 
 Return JSON: { "summary": "string", "onTrack": boolean, "suggestions": ["string"] }`
 
-  const res = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [{ role: "user", content: prompt }],
-    response_format: { type: "json_object" },
-    temperature: 0.5,
-    max_tokens: 500,
+  const res = await gemini.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      temperature: 0.5,
+      maxOutputTokens: 500,
+    }
   })
 
-  const content = res.choices[0]?.message?.content
+  const content = res.text
   if (!content) throw new Error("Empty response")
   return JSON.parse(content)
 }

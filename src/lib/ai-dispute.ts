@@ -1,4 +1,4 @@
-import { openai } from "./openai"
+import { gemini } from "./gemini"
 
 export interface SuggestedResolution {
   summary: string
@@ -16,12 +16,20 @@ export async function suggestDisputeResolution(
   respondentEvidence: string[]
 ): Promise<SuggestedResolution | null> {
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `You are a dispute resolution assistant for a freelance escrow platform.
+    const completion = await gemini.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: JSON.stringify({
+        contractTerms,
+        milestoneTitle,
+        deliverableDescription,
+        openerStatement,
+        openerEvidence,
+        respondentStatement,
+        respondentEvidence,
+      }),
+      config: {
+        responseMimeType: "application/json",
+        systemInstruction: `You are a dispute resolution assistant for a freelance escrow platform.
 
 Given the contract terms, milestone details, and statements from both sides, suggest a fair resolution.
 
@@ -31,24 +39,10 @@ Rules:
 - Cite which party's evidence supports the conclusion
 - Return ONLY valid JSON with: summary (string), citedClause (string), citedEvidence (string)
 - The resolution is non-binding — it's an advisory suggestion`,
-        },
-        {
-          role: "user",
-          content: JSON.stringify({
-            contractTerms,
-            milestoneTitle,
-            deliverableDescription,
-            openerStatement,
-            openerEvidence,
-            respondentStatement,
-            respondentEvidence,
-          }),
-        },
-      ],
-      response_format: { type: "json_object" },
+      }
     })
 
-    const content = completion.choices[0]?.message?.content
+    const content = completion.text
     if (!content) return null
 
     return JSON.parse(content) as SuggestedResolution

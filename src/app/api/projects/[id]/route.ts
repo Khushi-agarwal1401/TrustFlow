@@ -25,7 +25,13 @@ export async function GET(
           }
         }
       },
-      contract: true,
+      contract: {
+        include: {
+          signatures: {
+            include: { user: true }
+          }
+        }
+      },
       freelancer: true,
       client: true,
       riskSignals: { orderBy: { computedAt: "desc" }, take: 5 },

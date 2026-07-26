@@ -1,4 +1,4 @@
-import { openai } from "./openai"
+import { gemini } from "./gemini"
 
 export interface ValidationResult {
   matchSummary: string
@@ -13,15 +13,20 @@ export async function validateSubmission(
   fileUrls: string[],
   linkEvidence: Array<{ type: string; url: string; label: string }> | null
 ): Promise<ValidationResult> {
-  const modelVersion = "gpt-4o-2024-08"
+  const modelVersion = "gemini-2.5-flash"
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `You are a scope validation assistant for a freelance escrow platform.
+    const completion = await gemini.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: JSON.stringify({
+        agreedDeliverable: deliverableDescription,
+        submittedDescription: submissionDescription,
+        fileUrls,
+        linkEvidence,
+      }),
+      config: {
+        responseMimeType: "application/json",
+        systemInstruction: `You are a scope validation assistant for a freelance escrow platform.
 
 Your job: compare the submitted work evidence against the agreed deliverable description and determine if the scope has been met.
 
@@ -32,21 +37,10 @@ Rules:
 - Write a concise plain-language match summary (2-3 sentences) explaining your reasoning
 - The match summary will be shown to the client as an advisory aid — never as an auto-approval
 - Return ONLY valid JSON with fields: matchSummary (string), confidence ("HIGH" | "NEEDS_REVIEW")`,
-        },
-        {
-          role: "user",
-          content: JSON.stringify({
-            agreedDeliverable: deliverableDescription,
-            submittedDescription: submissionDescription,
-            fileUrls,
-            linkEvidence,
-          }),
-        },
-      ],
-      response_format: { type: "json_object" },
+      }
     })
 
-    const content = completion.choices[0]?.message?.content
+    const content = completion.text
     if (!content) throw new Error("No response from AI")
 
     const parsed = JSON.parse(content) as ValidationResult
