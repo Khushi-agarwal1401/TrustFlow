@@ -13,7 +13,7 @@ export default async function AdminDisputesPage() {
       <div className="flex min-h-screen items-center justify-center bg-bg-base">
         <div className="card-double"><div className="card-inner text-center py-8 px-12">
           <p className="text-text-secondary">Access denied — admin only</p>
-          <Link href="/" className="btn-ghost text-sm mt-4 inline-block">Back to Dashboard</Link>
+          <Link href="/dashboard" className="btn-ghost text-sm mt-4 inline-block">Back to Dashboard</Link>
         </div></div>
       </div>
     )
@@ -34,7 +34,7 @@ export default async function AdminDisputesPage() {
     <div className="max-w-7xl mx-auto px-6 py-6">
       <header className="glass-strong rounded-2xl px-6 py-3 mb-8 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link href="/" className="text-text-secondary hover:text-text-primary transition">&larr; Dashboard</Link>
+          <Link href="/dashboard" className="text-text-secondary hover:text-text-primary transition">&larr; Dashboard</Link>
           <span className="text-text-muted">/</span>
           <h1 className="text-lg font-bold" style={{ fontFamily: "var(--font-poppins)" }}>Admin — Disputes</h1>
         </div>

@@ -56,7 +56,7 @@ export default async function UserProfilePage({
     <div className="min-h-screen bg-[#0B0A1F]">
       <header className="border-b border-white/10">
         <div className="mx-auto flex max-w-5xl items-center gap-4 px-6 py-4">
-          <Link href="/" className="text-sm text-gray-500 hover:text-white">&larr; Dashboard</Link>
+          <Link href="/dashboard" className="text-sm text-gray-500 hover:text-white">&larr; Dashboard</Link>
           <h1 className="text-2xl font-bold text-white" style={{ fontFamily: "var(--font-poppins)" }}>{user.name}</h1>
         </div>
       </header>

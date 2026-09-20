@@ -112,7 +112,7 @@ export default function DisputePage() {
     <div className="min-h-screen bg-[#0B0A1F]">
       <header className="border-b border-white/10">
         <div className="mx-auto flex max-w-5xl items-center gap-4 px-6 py-4">
-          <Link href="/" className="text-sm text-gray-500 hover:text-white">&larr; Dashboard</Link>
+          <Link href="/dashboard" className="text-sm text-gray-500 hover:text-white">&larr; Dashboard</Link>
           <h1 className="text-2xl font-bold text-white" style={{ fontFamily: "var(--font-poppins)" }}>Dispute</h1>
           <span className="rounded-full border border-red-400/30 bg-red-400/10 px-3 py-1 text-xs text-red-400">
             {dispute.status.replace(/_/g, " ")}

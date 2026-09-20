@@ -21,7 +21,7 @@ export default async function NotificationsPage() {
     <div className="max-w-4xl mx-auto px-6 py-6 font-sans">
       <header className="bg-white border border-gray-200 rounded-2xl px-6 py-4 mb-8 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
-          <Link href="/" className="text-gray-500 hover:text-gray-900 transition">&larr; Dashboard</Link>
+          <Link href="/dashboard" className="text-gray-500 hover:text-gray-900 transition">&larr; Dashboard</Link>
           <span className="text-gray-300">/</span>
           <h1 className="text-lg font-bold text-gray-900">Notifications</h1>
         </div>
