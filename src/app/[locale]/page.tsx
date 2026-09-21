@@ -2,149 +2,211 @@
 
 import { motion, Variants } from "framer-motion"
 import Link from "next/link"
+import Image from "next/image"
 import { 
   FileText, Wallet, FolderCheck, ScanSearch, AlertTriangle, 
   Scale, Shield, Lock, FileKey, History, Eye, CheckCircle2,
-  Edit3, Activity, Sparkles
+  Edit3, Activity, ArrowRight
 } from "lucide-react"
 
 import { LandingNavbar } from "@/components/landing/LandingNavbar"
 import { GlassCard } from "@/components/landing/GlassCard"
 import { FeatureGrid } from "@/components/landing/FeatureGrid"
-import { DashboardPreview } from "@/components/landing/DashboardPreview"
 import { TrustBar } from "@/components/landing/TrustBar"
 
+const emilEase = [0.23, 1, 0.32, 1] as [number, number, number, number]
+
 const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] } }
+  hidden: { opacity: 0, y: 16, scale: 0.95 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    scale: 1,
+    transition: { duration: 0.8, ease: emilEase } 
+  }
+}
+
+const staggerContainer: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1
+    }
+  }
 }
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-brand-bg text-brand-text font-inter selection:bg-brand-primary/20 overflow-x-hidden">
+    <div className="min-h-screen bg-bg-base text-text-primary selection:bg-accent-subtle overflow-x-hidden">
       <LandingNavbar />
 
       <main>
         {/* HERO SECTION */}
-        <section className="relative pt-32 pb-16 md:pt-48 md:pb-24 overflow-hidden px-6">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-gradient-to-b from-brand-primary/30 to-brand-secondary/10 blur-[120px] rounded-full -z-10 opacity-70" />
-          
-          <div className="max-w-4xl mx-auto text-center">
-            <motion.div initial="hidden" animate="visible" variants={fadeUp}>
-              <p className="text-brand-cyan font-semibold tracking-widest text-xs uppercase mb-6">
-                AI-Powered Freelance Accountability
-              </p>
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-poppins font-bold text-white tracking-tight leading-[1.1] mb-8">
-                Work with freelancers you trust.<br className="hidden md:block" /> Even when things go wrong.
-              </h1>
-              <p className="text-lg md:text-xl text-brand-text-secondary leading-relaxed max-w-3xl mx-auto mb-10">
-                TrustFlow AI adds contracts, escrow, evidence-based progress verification, and dispute protection to the freelancer relationships you already have — without forcing you into a marketplace.
-              </p>
+        <section className="relative pt-32 pb-16 md:pt-40 md:pb-24 px-6 max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            
+            {/* Left Content */}
+            <motion.div 
+              initial="hidden" 
+              animate="visible" 
+              variants={staggerContainer}
+              className="max-w-2xl"
+            >
+              <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-bg-surface border border-border-default mb-8 shadow-sm">
+                <Shield size={14} className="text-accent-primary" />
+                <span className="text-text-secondary font-medium text-xs tracking-wide uppercase">
+                  AI-Powered Freelance Accountability
+                </span>
+              </motion.div>
               
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-                <Link href="/auth/signin?mode=signup" className="w-full sm:w-auto px-8 py-4 rounded-xl bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold shadow-[0_0_20px_rgba(139,92,246,0.3)] transition-all hover:scale-[1.02]">
+              <motion.h1 variants={fadeUp} className="text-4xl md:text-6xl font-semibold text-text-primary tracking-tight leading-[1.1] mb-6">
+                Work with freelancers you trust.
+                <br className="hidden md:block" />
+                <span className="text-text-secondary">Even when things go wrong.</span>
+              </motion.h1>
+              
+              <motion.p variants={fadeUp} className="text-lg text-text-secondary leading-relaxed mb-10 max-w-xl">
+                TrustFlow adds contracts, escrow, evidence-based progress verification, and dispute protection to the freelancer relationships you already have. No marketplace lock-in.
+              </motion.p>
+              
+              <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center gap-4 mb-8">
+                <Link 
+                  href="/auth/signin?mode=signup" 
+                  className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-accent-primary hover:bg-accent-hover text-white font-semibold shadow-sm transition-all active:scale-[0.97] flex items-center justify-center gap-2"
+                >
                   Get Started Free
+                  <ArrowRight size={18} />
                 </Link>
-                <Link href="#how-it-works" className="w-full sm:w-auto px-8 py-4 rounded-xl bg-brand-surface border border-[rgba(255,255,255,0.1)] text-white font-semibold hover:bg-[rgba(255,255,255,0.05)] transition-all">
+                <Link 
+                  href="#how-it-works" 
+                  className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-bg-surface border border-border-default text-text-primary font-medium hover:bg-bg-hover transition-all active:scale-[0.97] flex items-center justify-center"
+                >
                   See How It Works
                 </Link>
-              </div>
+              </motion.div>
               
-              <p className="text-sm text-brand-text-muted">
-                No freelancer marketplace. No migration. Just a safer way to work together.
-              </p>
             </motion.div>
-          </div>
-        </section>
 
-        {/* HERO PRODUCT VISUAL */}
-        <section className="px-6 mb-12">
-          <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }}>
-            <DashboardPreview />
-          </motion.div>
+            {/* Right Visual */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 1.2, ease: emilEase, delay: 0.2 }}
+              className="relative aspect-square md:aspect-[4/3] rounded-3xl overflow-hidden border border-border-subtle bg-bg-surface shadow-card"
+            >
+              <Image 
+                src="/images/hero_abstract_light.jpg" 
+                alt="Abstract representation of secure escrow flow" 
+                fill
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                priority
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-bg-base via-transparent to-transparent opacity-50" />
+            </motion.div>
+
+          </div>
         </section>
 
         {/* TRUST BAR */}
-        <TrustBar />
+        <div className="border-y border-border-subtle bg-bg-surface">
+          <TrustBar />
+        </div>
 
         {/* PROBLEM SECTION */}
         <section className="py-24 px-6 max-w-6xl mx-auto" id="problem">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-poppins font-bold text-white mb-6">
+          <motion.div 
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={staggerContainer}
+            className="mb-16"
+          >
+            <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-semibold text-text-primary mb-4 tracking-tight">
               Freelance work breaks down when trust isn&apos;t structured.
-            </h2>
-            <p className="text-lg text-brand-text-secondary max-w-2xl mx-auto">
+            </motion.h2>
+            <motion.p variants={fadeUp} className="text-lg text-text-secondary max-w-2xl">
               You already know who you want to work with. The problem is everything that happens after the agreement.
-            </p>
-          </div>
+            </motion.p>
+          </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <GlassCard className="p-8" glow="purple" hoverEffect>
-              <Edit3 className="w-8 h-8 text-brand-primary mb-4" />
-              <h3 className="text-xl font-poppins font-semibold text-white mb-3">&quot;We agreed on it in WhatsApp.&quot;</h3>
-              <p className="text-brand-text-secondary leading-relaxed">Scope gets buried in conversations, leaving both sides with different definitions of &quot;done.&quot;</p>
-            </GlassCard>
-            <GlassCard className="p-8" glow="blue" hoverEffect>
-              <Lock className="w-8 h-8 text-brand-secondary mb-4" />
-              <h3 className="text-xl font-poppins font-semibold text-white mb-3">&quot;Should I pay before seeing the work?&quot;</h3>
-              <p className="text-brand-text-secondary leading-relaxed">Clients hesitate to pay upfront. Freelancers hesitate to start without payment certainty.</p>
-            </GlassCard>
-            <GlassCard className="p-8" glow="cyan" hoverEffect>
-              <Activity className="w-8 h-8 text-brand-cyan mb-4" />
-              <h3 className="text-xl font-poppins font-semibold text-white mb-3">&quot;Is the project actually on track?&quot;</h3>
-              <p className="text-brand-text-secondary leading-relaxed">There is often no structured evidence showing what has been completed against the agreed milestone.</p>
-            </GlassCard>
-            <GlassCard className="p-8" glow="purple" hoverEffect>
-              <Scale className="w-8 h-8 text-brand-primary mb-4" />
-              <h3 className="text-xl font-poppins font-semibold text-white mb-3">&quot;Who decides what was actually agreed?&quot;</h3>
-              <p className="text-brand-text-secondary leading-relaxed">When work gets disputed, conversations become evidence — but there is rarely a structured process to evaluate them.</p>
-            </GlassCard>
-          </div>
+          <motion.div 
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={staggerContainer}
+            className="grid grid-cols-1 md:grid-cols-2 gap-6"
+          >
+            {[
+              { icon: <Edit3 />, title: "\"We agreed on it in WhatsApp.\"", desc: "Scope gets buried in conversations, leaving both sides with different definitions of \"done.\"" },
+              { icon: <Lock />, title: "\"Should I pay before seeing the work?\"", desc: "Clients hesitate to pay upfront. Freelancers hesitate to start without payment certainty." },
+              { icon: <Activity />, title: "\"Is the project actually on track?\"", desc: "There is often no structured evidence showing what has been completed against the agreed milestone." },
+              { icon: <Scale />, title: "\"Who decides what was actually agreed?\"", desc: "When work gets disputed, conversations become evidence — but there is rarely a structured process to evaluate them." }
+            ].map((item, idx) => (
+              <motion.div key={idx} variants={fadeUp}>
+                <GlassCard className="p-8 h-full" hoverEffect>
+                  <div className="w-10 h-10 rounded-full bg-bg-surface border border-border-default flex items-center justify-center text-accent-primary mb-6 shadow-sm">
+                    {item.icon}
+                  </div>
+                  <h3 className="text-xl font-medium text-text-primary mb-3">{item.title}</h3>
+                  <p className="text-text-secondary leading-relaxed">{item.desc}</p>
+                </GlassCard>
+              </motion.div>
+            ))}
+          </motion.div>
         </section>
 
         {/* SOLUTION SECTION */}
-        <section className="py-24 px-6 bg-brand-surface/20 border-y border-[rgba(255,255,255,0.06)]">
+        <section className="py-24 px-6 bg-bg-elevated border-y border-border-subtle">
           <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-poppins font-bold text-white mb-6">
-                From &quot;Trust me.&quot; to &quot;Here&apos;s the evidence.&quot;
-              </h2>
-              <p className="text-lg text-brand-text-secondary max-w-2xl mx-auto">
+            <motion.div 
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
+              variants={staggerContainer}
+              className="text-center mb-16"
+            >
+              <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-semibold text-text-primary mb-4 tracking-tight">
+                From &quot;Trust me&quot; to &quot;Here&apos;s the evidence&quot;.
+              </motion.h2>
+              <motion.p variants={fadeUp} className="text-lg text-text-secondary max-w-2xl mx-auto">
                 TrustFlow creates a clear, auditable path from agreement to payment.
-              </p>
-            </div>
+              </motion.p>
+            </motion.div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
               {/* Before */}
               <GlassCard className="p-8 opacity-70 bg-transparent border-dashed">
-                <h3 className="text-sm font-semibold text-brand-text-muted uppercase tracking-wider mb-6">Before TrustFlow</h3>
+                <h3 className="text-sm font-medium text-text-muted uppercase tracking-widest mb-8">Before TrustFlow</h3>
                 <div className="space-y-4">
-                  <div className="bg-brand-surface p-3 rounded-lg rounded-tl-none w-3/4"><p className="text-sm">Can you add this too?</p></div>
-                  <div className="bg-brand-primary/20 p-3 rounded-lg rounded-tr-none w-3/4 ml-auto text-right"><p className="text-sm">Yeah, should be fine.</p></div>
-                  <div className="bg-brand-surface p-3 rounded-lg rounded-tl-none w-3/4"><p className="text-sm">Did you finish the design?</p></div>
-                  <div className="bg-brand-primary/20 p-3 rounded-lg rounded-tr-none w-3/4 ml-auto text-right"><p className="text-sm">Almost.</p></div>
+                  <div className="bg-bg-surface p-4 rounded-xl rounded-tl-none w-[80%] border border-border-default shadow-sm"><p className="text-sm text-text-primary">Can you add this too?</p></div>
+                  <div className="bg-accent-subtle p-4 rounded-xl rounded-tr-none w-[80%] ml-auto text-right"><p className="text-sm text-accent-primary font-medium">Yeah, should be fine.</p></div>
+                  <div className="bg-bg-surface p-4 rounded-xl rounded-tl-none w-[80%] border border-border-default shadow-sm"><p className="text-sm text-text-primary">Did you finish the design?</p></div>
+                  <div className="bg-accent-subtle p-4 rounded-xl rounded-tr-none w-[80%] ml-auto text-right"><p className="text-sm text-accent-primary font-medium">Almost.</p></div>
                 </div>
               </GlassCard>
 
               {/* After */}
-              <GlassCard className="p-8" glow="blue">
-                <h3 className="text-sm font-semibold text-brand-secondary uppercase tracking-wider mb-6">With TrustFlow</h3>
-                <div className="space-y-4 font-mono text-sm">
-                  <div className="flex items-center gap-3 text-white">
-                    <CheckCircle2 size={16} className="text-brand-success" /> Contract Accepted
+              <GlassCard className="p-8 border-accent-ring shadow-card-hover">
+                <h3 className="text-sm font-medium text-accent-primary uppercase tracking-widest mb-8">With TrustFlow</h3>
+                <div className="space-y-5 text-sm">
+                  <div className="flex items-center gap-4 text-text-primary font-medium">
+                    <CheckCircle2 size={18} className="text-success" /> Contract Accepted
                   </div>
-                  <div className="flex items-center gap-3 text-white">
-                    <CheckCircle2 size={16} className="text-brand-success" /> Milestone 1 Funded
+                  <div className="flex items-center gap-4 text-text-primary font-medium">
+                    <CheckCircle2 size={18} className="text-success" /> Milestone 1 Funded
                   </div>
-                  <div className="flex items-center gap-3 text-white">
-                    <CheckCircle2 size={16} className="text-brand-success" /> Evidence Submitted
+                  <div className="flex items-center gap-4 text-text-primary font-medium">
+                    <CheckCircle2 size={18} className="text-success" /> Evidence Submitted
                   </div>
-                  <div className="flex items-center gap-3 text-white">
-                    <CheckCircle2 size={16} className="text-brand-success" /> ₹30,000 Released
+                  <div className="flex items-center gap-4 text-text-primary font-medium">
+                    <CheckCircle2 size={18} className="text-success" /> ₹30,000 Released
                   </div>
-                  <div className="mt-6 p-4 rounded-lg bg-brand-surface border border-brand-success/20">
-                    <p className="text-xs text-brand-success font-bold mb-1">RISK: GREEN</p>
-                    <p className="text-xs text-brand-text-secondary font-sans">Activity detected 1 day ago. Deadline in 5 days.</p>
+                  <div className="mt-8 p-5 rounded-xl bg-bg-base border border-border-default shadow-inner">
+                    <p className="text-xs text-success font-semibold tracking-wider mb-2">RISK: GREEN</p>
+                    <p className="text-sm text-text-secondary">Activity detected 1 day ago. Deadline in 5 days.</p>
                   </div>
                 </div>
               </GlassCard>
@@ -154,29 +216,29 @@ export default function LandingPage() {
 
         {/* HOW IT WORKS */}
         <section className="py-24 px-6 max-w-6xl mx-auto" id="how-it-works">
-          <div className="text-center mb-20">
-            <h2 className="text-3xl md:text-4xl font-poppins font-bold text-white mb-6">
+          <div className="mb-16">
+            <h2 className="text-3xl md:text-4xl font-semibold text-text-primary tracking-tight">
               One relationship. One clear workflow.
             </h2>
           </div>
 
           <div className="relative">
-            <div className="hidden lg:block absolute top-6 left-0 right-0 h-0.5 bg-[rgba(255,255,255,0.06)] -z-10" />
+            <div className="hidden lg:block absolute top-6 left-0 right-0 h-px bg-border-default -z-10" />
             <div className="grid grid-cols-1 lg:grid-cols-6 gap-8">
               {[
                 { step: "01", title: "Define", desc: "Describe the project in plain language." },
                 { step: "02", title: "Contract", desc: "AI turns your scope into clear milestones." },
                 { step: "03", title: "Fund", desc: "Put milestone funds in escrow." },
                 { step: "04", title: "Submit", desc: "Freelancer delivers evidence." },
-                { step: "05", title: "Verify", desc: "AI compares the evidence with the deliverable." },
+                { step: "05", title: "Verify", desc: "AI compares evidence with the deliverable." },
                 { step: "06", title: "Approve & Pay", desc: "Client approves. Payment is released." }
               ].map((s) => (
                 <div key={s.step} className="relative flex flex-col items-center lg:items-start text-center lg:text-left">
-                  <div className="w-12 h-12 rounded-full bg-brand-surface border border-[rgba(255,255,255,0.1)] flex items-center justify-center font-bold text-brand-primary mb-4 shrink-0 shadow-lg">
+                  <div className="w-12 h-12 rounded-full bg-bg-surface border border-border-default flex items-center justify-center font-semibold text-text-primary mb-6 shadow-sm">
                     {s.step}
                   </div>
-                  <h3 className="text-lg font-poppins font-semibold text-white mb-2">{s.title}</h3>
-                  <p className="text-sm text-brand-text-secondary leading-relaxed">{s.desc}</p>
+                  <h3 className="text-lg font-medium text-text-primary mb-2">{s.title}</h3>
+                  <p className="text-sm text-text-secondary leading-relaxed">{s.desc}</p>
                 </div>
               ))}
             </div>
@@ -184,9 +246,9 @@ export default function LandingPage() {
         </section>
 
         {/* CORE FEATURES */}
-        <section className="py-24 px-6 max-w-6xl mx-auto" id="features">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-poppins font-bold text-white mb-6">
+        <section className="py-24 px-6 max-w-6xl mx-auto bg-bg-subtle rounded-3xl border border-border-subtle" id="features">
+          <div className="mb-16 max-w-2xl">
+            <h2 className="text-3xl md:text-4xl font-semibold text-text-primary mb-4 tracking-tight">
               Everything you need to keep freelance work accountable.
             </h2>
           </div>
@@ -225,43 +287,11 @@ export default function LandingPage() {
           ]} />
         </section>
 
-        {/* AI TRUST SECTION */}
-        <section className="py-24 px-6 bg-brand-surface/30 border-y border-[rgba(255,255,255,0.06)] relative overflow-hidden">
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-brand-cyan/10 blur-[120px] rounded-full -z-10" />
-          <div className="max-w-6xl mx-auto">
-            <div className="max-w-2xl mb-16">
-              <h2 className="text-3xl md:text-4xl font-poppins font-bold text-white mb-6">
-                AI that assists.<br/>Never AI that decides.
-              </h2>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-              <GlassCard className="p-8" glow="cyan">
-                <h3 className="text-lg font-poppins font-semibold text-white mb-3">AI Contract Generator</h3>
-                <p className="text-brand-text-secondary text-sm mb-4">Creates the first draft. The client can review and edit every term.</p>
-              </GlassCard>
-              <GlassCard className="p-8" glow="cyan">
-                <h3 className="text-lg font-poppins font-semibold text-white mb-3">AI Scope Validation</h3>
-                <p className="text-brand-text-secondary text-sm mb-4">Checks the evidence against the agreed deliverable. It provides a summary and confidence level.</p>
-              </GlassCard>
-              <GlassCard className="p-8" glow="cyan">
-                <h3 className="text-lg font-poppins font-semibold text-white mb-3">AI Dispute Assistant</h3>
-                <p className="text-brand-text-secondary text-sm mb-4">Analyzes both parties&apos; evidence. Produces a non-binding suggested resolution citing relevant clauses.</p>
-              </GlassCard>
-            </div>
-            
-            <div className="inline-flex items-center gap-3 bg-[rgba(103,232,249,0.1)] border border-[rgba(103,232,249,0.2)] rounded-lg px-4 py-3 text-sm text-brand-cyan">
-              <Sparkles size={16} />
-              <span>Every AI-generated result is clearly labeled: <strong className="font-semibold">AI-generated — review before relying on it.</strong></span>
-            </div>
-          </div>
-        </section>
-
         {/* SECURITY & TRUST */}
         <section className="py-24 px-6 max-w-6xl mx-auto" id="security">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-poppins font-bold text-white mb-6">
-              Built for projects where money and accountability matter.
+          <div className="mb-16">
+            <h2 className="text-3xl md:text-4xl font-semibold text-text-primary tracking-tight">
+              Built for projects where accountability matters.
             </h2>
           </div>
           
@@ -274,11 +304,11 @@ export default function LandingPage() {
               { title: "AI Transparency", desc: "AI outputs are labeled and retained for auditability.", icon: <Eye /> },
               { title: "Data Protection", desc: "Use secure encrypted transport and managed storage infrastructure.", icon: <Shield /> }
             ].map((item, i) => (
-              <GlassCard key={i} className="p-6 flex items-start gap-4">
-                <div className="text-brand-text-muted">{item.icon}</div>
+              <GlassCard key={i} className="p-8 flex flex-col gap-4">
+                <div className="text-text-muted">{item.icon}</div>
                 <div>
-                  <h4 className="font-semibold text-white mb-1">{item.title}</h4>
-                  <p className="text-sm text-brand-text-secondary">{item.desc}</p>
+                  <h4 className="font-medium text-text-primary mb-2">{item.title}</h4>
+                  <p className="text-sm text-text-secondary leading-relaxed">{item.desc}</p>
                 </div>
               </GlassCard>
             ))}
@@ -286,65 +316,65 @@ export default function LandingPage() {
         </section>
 
         {/* FINAL CTA */}
-        <section className="py-24 px-6 max-w-5xl mx-auto">
-          <GlassCard glow="purple" className="p-12 text-center border-[rgba(255,255,255,0.15)] shadow-[0_0_50px_rgba(139,92,246,0.15)]">
-            <h2 className="text-4xl md:text-5xl font-poppins font-bold text-white mb-6 tracking-tight">
+        <section className="py-32 px-6 max-w-5xl mx-auto">
+          <div className="text-center">
+            <h2 className="text-4xl md:text-5xl font-semibold text-text-primary mb-6 tracking-tight">
               Bring your next freelance project into focus.
             </h2>
-            <p className="text-xl text-brand-text-secondary mb-10 max-w-2xl mx-auto">
+            <p className="text-xl text-text-secondary mb-10 max-w-2xl mx-auto">
               Clear scope. Protected milestones. Evidence when it matters.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-              <Link href="/auth/signin?mode=signup" className="w-full sm:w-auto px-8 py-4 rounded-xl bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold shadow-[0_0_20px_rgba(139,92,246,0.3)] transition-all hover:scale-[1.02]">
+              <Link 
+                href="/auth/signin?mode=signup" 
+                className="w-full sm:w-auto px-8 py-4 rounded-xl bg-accent-primary hover:bg-accent-hover text-white font-semibold transition-all shadow-card active:scale-[0.97]"
+              >
                 Get Started Free
               </Link>
-              <Link href="#how-it-works" className="w-full sm:w-auto px-8 py-4 rounded-xl bg-transparent border border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.05)] text-white font-semibold transition-all">
-                See How It Works
-              </Link>
             </div>
-            <p className="text-sm text-brand-text-muted">
+            <p className="text-sm text-text-muted">
               Bring your existing freelancer. No marketplace migration required.
             </p>
-          </GlassCard>
+          </div>
         </section>
 
       </main>
 
       {/* FOOTER */}
-      <footer className="border-t border-[rgba(255,255,255,0.06)] bg-brand-bg pt-16 pb-8 px-6">
+      <footer className="border-t border-border-subtle bg-bg-surface pt-16 pb-8 px-6">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           <div className="md:col-span-2">
             <Link href="/" className="inline-block mb-4">
-              <span className="font-poppins font-bold text-xl text-white tracking-tight">
-                TrustFlow <span className="text-brand-text-muted">AI</span>
+              <span className="font-semibold text-xl text-text-primary tracking-tight">
+                TrustFlow
               </span>
             </Link>
-            <p className="text-brand-text-secondary max-w-sm">
+            <p className="text-text-secondary max-w-sm">
               Freelance work, with accountability built in.
             </p>
           </div>
           <div>
-            <h4 className="font-semibold text-white mb-4">Product</h4>
+            <h4 className="font-medium text-text-primary mb-4">Product</h4>
             <ul className="space-y-3">
-              <li><Link href="#how-it-works" className="text-sm text-brand-text-secondary hover:text-white transition-colors">How It Works</Link></li>
-              <li><Link href="#features" className="text-sm text-brand-text-secondary hover:text-white transition-colors">Features</Link></li>
-              <li><Link href="#security" className="text-sm text-brand-text-secondary hover:text-white transition-colors">Security</Link></li>
+              <li><Link href="#how-it-works" className="text-sm text-text-secondary hover:text-accent-primary transition-colors">How It Works</Link></li>
+              <li><Link href="#features" className="text-sm text-text-secondary hover:text-accent-primary transition-colors">Features</Link></li>
+              <li><Link href="#security" className="text-sm text-text-secondary hover:text-accent-primary transition-colors">Security</Link></li>
             </ul>
           </div>
           <div>
-            <h4 className="font-semibold text-white mb-4">Legal</h4>
+            <h4 className="font-medium text-text-primary mb-4">Legal</h4>
             <ul className="space-y-3">
-              <li><Link href="#" className="text-sm text-brand-text-secondary hover:text-white transition-colors">Terms of Service</Link></li>
-              <li><Link href="#" className="text-sm text-brand-text-secondary hover:text-white transition-colors">Privacy Policy</Link></li>
+              <li><Link href="#" className="text-sm text-text-secondary hover:text-accent-primary transition-colors">Terms of Service</Link></li>
+              <li><Link href="#" className="text-sm text-text-secondary hover:text-accent-primary transition-colors">Privacy Policy</Link></li>
             </ul>
           </div>
         </div>
         
-        <div className="max-w-6xl mx-auto border-t border-[rgba(255,255,255,0.06)] pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-brand-text-muted">
-            © 2026 TrustFlow AI
+        <div className="max-w-6xl mx-auto border-t border-border-subtle pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-sm text-text-muted">
+            © 2026 TrustFlow
           </p>
-          <p className="text-sm text-brand-text-muted font-medium">
+          <p className="text-sm text-text-muted font-medium">
             AI-assisted. Evidence-backed. Human-decided.
           </p>
         </div>

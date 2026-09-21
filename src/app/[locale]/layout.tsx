@@ -1,20 +1,18 @@
 import type { Metadata } from "next"
-import { Poppins, Inter } from "next/font/google"
+import { Geist, Geist_Mono } from "next/font/google"
 import { NextIntlClientProvider } from "next-intl"
 import { getLocale, getMessages } from "next-intl/server"
 import "./globals.css"
 import { Providers } from "@/components/providers"
 
-const poppins = Poppins({
+const geist = Geist({
   subsets: ["latin"],
-  weight: ["600", "700"],
-  variable: "--font-poppins",
+  variable: "--font-geist",
 })
 
-const inter = Inter({
+const geistMono = Geist_Mono({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-inter",
+  variable: "--font-geist-mono",
 })
 
 export const metadata: Metadata = {
@@ -28,8 +26,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const messages = await getMessages()
 
   return (
-    <html lang={locale} className={`${poppins.variable} ${inter.variable}`}>
-      <body className="min-h-screen bg-bg-base antialiased">
+    <html lang={locale} className={`${geist.variable} ${geistMono.variable}`}>
+      <body className="min-h-screen bg-bg-base antialiased font-sans">
         <NextIntlClientProvider messages={messages}>
           <Providers>{children}</Providers>
         </NextIntlClientProvider>

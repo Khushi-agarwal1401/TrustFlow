@@ -3,17 +3,7 @@
 
 @theme {
   /* ── TrustFlow Landing Page Brand Colors ── */
-  --color-brand-bg: #0B0A1F;
-  --color-brand-surface: #151330;
-  --color-brand-primary: #8B5CF6;
-  --color-brand-secondary: #3B82F6;
-  --color-brand-cyan: #67E8F9;
-  --color-brand-success: #34D399;
-  --color-brand-warning: #FBBF24;
-  --color-brand-danger: #F87171;
-  --color-brand-text: #F1F0FA;
-  --color-brand-text-secondary: #A5B4CB;
-  --color-brand-text-muted: #6B7290;
+  /* We will now use the global Light Mode palette (bg-bg-base, etc) for the landing page. */
 
   /* ── Light Mode Palette ── */
   --color-bg-base: #FAFAFA;
@@ -130,7 +120,7 @@
   body {
     background-color: var(--color-bg-base);
     color: var(--color-text-primary);
-    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    font-family: var(--font-geist), system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     line-height: 1.5;

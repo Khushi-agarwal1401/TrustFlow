@@ -18,7 +18,7 @@ export default function SignInPage() {
               <span className="text-white text-lg font-bold">T</span>
             </div>
 
-            <h1 className="text-xl font-bold text-center mb-1" style={{ fontFamily: "var(--font-poppins)" }}>
+            <h1 className="text-xl font-bold text-center mb-1">
               Sign in to TrustFlow
             </h1>
             <p className="text-text-secondary text-center text-sm mb-7">
