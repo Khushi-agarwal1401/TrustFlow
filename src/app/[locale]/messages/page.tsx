@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
-import Link from "next/link"
+import { Link } from "@/i18n/routing"
 import { MessageSquare, ArrowRight, Clock, User as UserIcon } from "lucide-react"
 
 export default async function MessagesPage() {

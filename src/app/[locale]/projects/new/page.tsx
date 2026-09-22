@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
+import { Link } from "@/i18n/routing"
 import { useSession } from "next-auth/react"
 
 export default function NewProjectPage() {

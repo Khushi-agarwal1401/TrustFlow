@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
+import { Link } from "@/i18n/routing"
 import { motion } from "framer-motion"
 import { Shield, TrendingUp, Star, ChevronRight, Clock, Layers, FileCheck, CircleDashed } from "lucide-react"
 import { Button } from "@/components/ui/button"

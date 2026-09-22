@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from "react"
 
-import Link from "next/link"
+import { Link } from "@/i18n/routing"
 import { useSession } from "next-auth/react"
 
 export default function ProjectProposalsPage({ params }: { params: Promise<{ id: string }> }) {

@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import Link from "next/link"
+import { Link } from "@/i18n/routing"
 import { 
   User, Bell, Shield, Key, FileText, 
   Settings as SettingsIcon, Building, DollarSign, Plug

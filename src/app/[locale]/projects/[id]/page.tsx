@@ -7,7 +7,7 @@ import { DeadlinePredict } from "./deadline-predict"
 import { ProgressReport } from "./progress-report"
 import { RiskHistory } from "./risk-history"
 import { ReplaceFreelancer } from "./replace-freelancer"
-import Link from "next/link"
+import { Link } from "@/i18n/routing"
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth()

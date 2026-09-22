@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
-import Link from "next/link"
+import { Link } from "@/i18n/routing"
 
 interface EvidenceItem {
   id: string

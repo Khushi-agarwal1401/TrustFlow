@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
+import { Link } from "@/i18n/routing"
 import { useSession } from "next-auth/react"
 import { AISplitMilestones } from "../ai-split-milestones-modal"
 
