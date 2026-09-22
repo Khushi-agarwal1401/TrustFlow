@@ -37,11 +37,11 @@ export default async function Dashboard() {
     },
   })
   const escrowProtected = escrowTransactions
-    .filter((t) => t.status === "PENDING")
-    .reduce((sum, t) => sum + t.amount, 0)
+    .filter((t: { status: string; amount: number }) => t.status === "PENDING")
+    .reduce((sum: number, t: { amount: number }) => sum + t.amount, 0)
   const totalFunded = escrowTransactions
-    .filter((t) => t.status === "SUCCEEDED")
-    .reduce((sum, t) => sum + t.amount, 0)
+    .filter((t: { status: string; amount: number }) => t.status === "SUCCEEDED")
+    .reduce((sum: number, t: { amount: number }) => sum + t.amount, 0)
   
   // ── AI Trust Score Computation ──
   const allMilestones = allProjects.flatMap(p => p.milestones)
@@ -54,7 +54,7 @@ export default async function Dashboard() {
     select: { score: true },
   })
   const avgRating = ratings.length > 0
-    ? ratings.reduce((sum, r) => sum + r.score, 0) / ratings.length
+    ? ratings.reduce((sum: number, r: { score: number }) => sum + r.score, 0) / ratings.length
     : null
   const ratingScore = avgRating ? (avgRating / 5) * 100 : 100
   
@@ -210,7 +210,7 @@ export default async function Dashboard() {
                   <div className="mt-auto">
                     <div className="text-[28px] font-bold text-[#0F172A] tracking-tight">₹{escrowProtected.toLocaleString()}</div>
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-[#64748B]">Across {escrowTransactions.filter(t => t.status === 'PENDING').length || activeProjects.length} escrow{escrowTransactions.filter(t => t.status === 'PENDING').length !== 1 ? 's' : ''}</span>
+                      <span className="text-xs text-[#64748B]">Across {escrowTransactions.filter((t: { status: string }) => t.status === 'PENDING').length || activeProjects.length} escrow{escrowTransactions.filter((t: { status: string }) => t.status === 'PENDING').length !== 1 ? 's' : ''}</span>
                       <span className="text-xs font-bold text-[#10B981]">↑ {Math.round((totalFunded / Math.max(escrowProtected + totalFunded, 1)) * 100)}%</span>
                     </div>
                   </div>
@@ -354,7 +354,7 @@ export default async function Dashboard() {
                             <div className="w-5 h-5 rounded-full bg-[#10B981] text-white flex items-center justify-center"><svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
                             <span className="text-[10px] font-semibold text-[#0F172A]">Escrow</span>
                           </div>
-                          {project.milestones.map((m, i) => (
+                          {project.milestones.map((m: { id: string; status: string }, i: number) => (
                             <div key={m.id} className="flex flex-col items-center gap-1.5">
                               <div className={`w-5 h-5 rounded-full border-2 ${m.status === 'PAID' ? 'bg-[#10B981] border-[#10B981] text-white' : m.status !== 'PENDING' ? 'bg-white border-[#4F46E5]' : 'bg-white border-gray-200'} flex items-center justify-center`}>
                                 {m.status === 'PAID' ? <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg> : <div className={`w-1.5 h-1.5 rounded-full ${m.status !== 'PENDING' ? 'bg-[#4F46E5]' : 'bg-gray-200'}`}></div>}
@@ -414,7 +414,7 @@ export default async function Dashboard() {
                   <Link href="/notifications" className="text-[#4F46E5] text-xs font-semibold hover:underline">View all</Link>
                 </div>
                 <div className="flex flex-col gap-3">
-                  {notifications.map((notif) => (
+                  {notifications.map((notif: { id: string; type: string; payload: unknown }) => (
                     <div key={notif.id} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm flex items-start gap-3">
                       <div className="w-8 h-8 rounded-full bg-[#EEF2FF] text-[#4F46E5] flex items-center justify-center shrink-0"><svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg></div>
                       <div className="flex-1 min-w-0">
@@ -437,7 +437,7 @@ export default async function Dashboard() {
                   <Link href="/milestones" className="text-[#4F46E5] text-xs font-semibold hover:underline">View all</Link>
                 </div>
                 <div className="flex flex-col gap-3">
-                  {upcomingMilestones.map((m) => (
+                  {upcomingMilestones.map((m: { id: string; title: string; project: { title: string; totalAmount: number }; amount: number }) => (
                     <div key={m.id} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-start gap-3">
@@ -470,7 +470,7 @@ export default async function Dashboard() {
                   <Link href="/activity" className="text-[#4F46E5] text-xs font-semibold hover:underline">View all</Link>
                 </div>
                 <div className="flex flex-col gap-3">
-                  {projectEvents.map((evt) => (
+                  {projectEvents.map((evt: { id: string; eventType: string; project: { title: string } }) => (
                     <div key={evt.id} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm flex items-start gap-3">
                       <div className="w-8 h-8 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0 text-gray-500"><svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></div>
                       <div className="flex-1 min-w-0">
